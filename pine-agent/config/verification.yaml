@@ -1,0 +1,143 @@
+# ============================================================================
+# VERIFICATION CONFIGURATION — Pine Agent
+# ============================================================================
+# Two SEPARATE stages with two SEPARATE contracts (never merged):
+#   pre  = Pre-Implementation Verification  -> verification/pre_contract_schema.yaml
+#   post = Post-Implementation Verification -> verification/post_contract_schema.yaml
+# ============================================================================
+
+verification:
+  status: enabled
+  stages_are_separate: true            # structural invariant; tests enforce this
+
+  # ---------------------------------------------------------------------------
+  # PRE-IMPLEMENTATION VERIFICATION (before any code exists)
+  # Verifies INTENT: logic, math, definitions, data, assumptions, edge cases.
+  # ---------------------------------------------------------------------------
+  pre:
+    criteria:
+      - id: logic_valid
+        description: >
+          Boolean conditions and signal logic are internally consistent: no
+          contradictory clauses, direction semantics (long/short) coherent,
+          veto/filter logic composes as specified.
+        on_fail: blocker
+      - id: math_valid
+        description: >
+          Formulas in the formalization contract are mathematically sound and
+          match the user's stated intent; scale/units consistent.
+        on_fail: blocker
+      - id: variables_defined
+        description: >
+          Every referenced variable/formula/boolean condition is defined in
+          the formalization contract; no dangling references between stages.
+        on_fail: blocker
+      - id: required_data_available
+        description: >
+          Required data sources exist and are obtainable at the stated
+          timeframes (symbol types, request targets, volume availability).
+        on_fail: blocker
+      - id: assumptions_documented
+        description: >
+          All assumptions recorded with ids; behavior-changing assumptions
+          flagged for user confirmation.
+        on_fail: blocker
+      - id: ambiguities_resolved_or_recorded
+        description: >
+          Every ambiguity has an id and resolution status; unresolved
+          behavior-affecting ambiguities keep implementation_allowed=false.
+        on_fail: blocker
+      - id: edge_cases_checked
+        description: >
+          Edge cases enumerated (first bars / insufficient history, zero-range
+          bars, missing volume, session gaps, na propagation, extreme values).
+        on_fail: blocker
+      - id: feasibility_passed
+        description: >
+          Feasibility contract must exist and contain zero blockers before
+          Implementation Planning may start (order: pre-verification -> feasibility).
+        on_fail: blocker
+      - id: mtf_behavior_reviewed
+        description: >
+          When mtf=true: HTF/LTF request strategy, offset/lookahead discipline,
+          and TF-unit semantics reviewed before implementation.
+        on_fail: blocker
+      - id: repaint_risk_classified
+        description: >
+          Repaint risk classified with mechanism identified; undeclared risk
+          is a blocker.
+        on_fail: blocker
+    gate:
+      proceed_when: "status == passed AND blockers == []"
+      on_block: "pipeline halts before Feasibility/Implementation; blockers reported to user"
+      output_contract: verification/pre_contract_schema.yaml
+
+  # ---------------------------------------------------------------------------
+  # POST-IMPLEMENTATION VERIFICATION (after Implementation)
+  # Verifies the ARTIFACT: syntax, types, runtime, equivalence, budgets.
+  # ---------------------------------------------------------------------------
+  post:
+    criteria:
+      - id: syntax
+        description: >
+          Pine v6 syntax validity. If no compiler is available, result is
+          STATICALLY REVIEWED (honest label); compile confirmation requires a
+          user-reported TradingView result before VALIDATED status.
+        on_fail: blocker
+      - id: type_system
+        description: >
+          Types consistent: int/float/bool/color/string/series vs simple vs
+          const qualifiers; no implicit-casting surprises; tuple shapes match.
+        on_fail: blocker
+      - id: scope
+        description: >
+          Declaration order valid; no use-before-declaration; function-local
+          vs global scope respected; var/varip semantics as intended.
+        on_fail: blocker
+      - id: runtime_behavior
+        description: >
+          Bar-by-bar execution semantics respected; realtime rollback handled;
+          na-sentinel and state-machine behavior correct; no use of absolute
+          bar indices as history offsets.
+        on_fail: blocker
+      - id: signal_equivalence
+        description: >
+          Implemented signals match the approved formalization contract
+          (conditions, directions, thresholds); no undocumented behavior.
+        on_fail: blocker
+      - id: repainting
+        description: >
+          Repaint risk matches the classification made at formalization;
+          lookahead policy explicit in every request.security; HTF values
+          confirmed-bar only unless user accepted otherwise.
+        on_fail: blocker
+      - id: mtf_behavior
+        description: >
+          MTF constructs behave as planned across the stated timeframes;
+          TF-unit correctness (minutes vs bars) verified.
+        on_fail: blocker
+      - id: performance
+        description: >
+          Execution time and per-bar cost acceptable; loop bounds respected;
+          no quadratic growth on unbounded series.
+        on_fail: blocker
+      - id: resource_budgets
+        description: >
+          request.* count, plot count, label/line/box budgets within
+          TradingView limits for the target plan.
+        on_fail: blocker
+      - id: edge_cases_runtime
+        description: >
+          Edge cases from formalization behave as specified at runtime
+          (first-bar na handling, zero-range bars, missing data, deep history).
+        on_fail: blocker
+      - id: alert_behavior
+        description: >
+          alertcondition/alert payloads correct: referenced plots exist at
+          declared indices, placeholders resolve, firing conditions match
+          contract.
+        on_fail: blocker
+    gate:
+      proceed_when: "status == passed AND blockers == []"
+      on_block: "record blockers; roll back to Implementation with findings (do not patch blindly)"
+      output_contract: verification/post_contract_schema.yaml

@@ -1,0 +1,66 @@
+# ============================================================================
+# CONTRACT SCHEMA — POST-Implementation Verification
+# ============================================================================
+# Specification only. Runs AFTER Implementation on the produced artifact.
+# Checks the ARTIFACT. Separate from Pre-Verification; never merged.
+# No Pine Script code may be written by or within this schema.
+# ============================================================================
+
+schema_version: "1.0"
+stage: post_verification
+predecessor: implementation
+successor: release_or_rollback
+
+post_verification:
+  # --- Identity -----------------------------------------------------------------
+  request_id: null
+  implementation_id: null          # implementation contract / artifact under verification
+
+  # --- Static artifact checks ------------------------------------------------------
+  syntax: null                     # pass | fail | statically_reviewed
+                                   # (honest labels: no local compiler => statically_reviewed
+                                   #  until user-reported TradingView compile)
+  type_system: null                # type consistency: qualifiers, series/simple/const,
+                                   # tuple shapes, implicit casting
+  scope: null                      # declaration order, use-before-declaration, function
+                                   # vs global scope, var/varip placement
+
+  # --- Behavioral checks ---------------------------------------------------------------
+  runtime_behavior: null           # bar-by-bar semantics, realtime rollback, na sentinels,
+                                   # state machines, no absolute-index-as-offset history access
+  signal_equivalence: null         # implemented signals == approved formalization contract
+                                   # (conditions, directions, thresholds); deviations must be
+                                   # in implementation.plan_deviations with user approval
+  edge_cases_runtime: null         # formalization edge cases behave as required at runtime
+
+  # --- Risk & resource checks ---------------------------------------------------------------
+  repainting:
+    classification: null           # must match the pre-verification classification
+    mechanism: null
+    lookahead_policy_explicit: null  # every request.security carries explicit policy
+    matches_classification: null   # bool — artifact behaves as classified
+  mtf_behavior: null               # MTF constructs behave as planned; TF-unit correctness
+  performance: null                # per-bar cost, loop bounds, no unbounded growth
+  resource_budgets:
+    request_calls: null            # count vs platform budget (record actual number)
+    plot_count: null               # count vs platform limit
+    drawing_objects: null          # labels/lines/boxes lifecycle-bounded
+  alert_behavior: null             # alertcondition/alert payloads: referenced plots exist at
+                                   # declared indices, placeholders resolve, firing conditions
+                                   # match contract
+
+  # --- Findings & status ---------------------------------------------------------------------------
+  blockers: []                     # [{ id, check_id, reason }] — ANY entry => failed => rollback
+  warnings: []                     # non-blocking findings (e.g., overfitting notes)
+  status: pending                  # pending | in_progress | passed | failed
+  verdict: null                    # validated | rollback_to_implementation | needs_user_compile
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "Post-Verification is a SEPARATE stage from Pre-Verification; reports never merge."
+  - "Any blockers entry => status: failed => verdict: rollback_to_implementation (no blind patching)."
+  - "Without a local Pine compiler, syntax/type results are labeled statically_reviewed — never 'compiled'."
+  - "verdict: validated requires user-reported TradingView compile confirmation for runtime claims."
+  - "resource_budgets must record actual counts, not estimates, where the artifact permits counting."

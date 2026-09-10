@@ -1,0 +1,234 @@
+# ============================================================================
+# ROUTING CONFIGURATION — Pine Agent (v2, PHASE 3 Router Design)
+# ============================================================================
+# Governs the Skill Routing stage. Algorithm + output contract:
+# meta/skill_router.md (Design Specification v2.0.0, contract routing/2).
+#
+# Five-layer organization (binding — Architect Mode upgrade):
+#   classification_rules | matching_rules | selection_rules
+#   | dependency_rules   | context_policy
+#
+# Architectural separation:
+#   Registry = Skill knowledge/capabilities (skills/registry.yaml)
+#   THIS FILE = routing and selection rules ONLY (no Skill content here)
+#   Router = decision engine (specified in meta/skill_router.md; implemented
+#            in a future phase — nothing in this file is executable logic)
+#   Formalization = converts the routed request into the formal contract
+# ============================================================================
+
+routing:
+  status: enabled                      # enabled | disabled
+  strategy: minimum_required_skills    # never "load_all"
+  contract_version: "routing/2"        # output contract (meta/skill_router.md §13)
+
+  # ==========================================================================
+  # LAYER 1 — classification_rules
+  # How user requests are classified and domains identified.
+  # ==========================================================================
+  classification_rules:
+    request_classes:                   # primary + secondary per request
+      - conceptual
+      - analytical
+      - debugging
+      - mathematical
+      - indicator_design
+      - strategy_logic
+      - Pine_Script_implementation
+      - MTF
+      - performance
+      - visualization
+      - verification
+      - research
+      - architecture
+      - mixed                          # only when >= 2 classes equally dominant
+    rules:
+      exactly_one_primary_class: true
+      mixed_class_rule: "mixed names the dominant operational requirement inside its record; secondary classes listed in routing_trace"
+      registry_driven: "classes map to the skill-routing Skill's classification map and Registry domains; a class with no Registry coverage => insufficient_coverage, never a guess"
+      deterministic: "same request text + same registry revision => same classification (no session/state/time dependence)"
+      unsupported_class_fallback: false   # never force a class that does not fit
+    domain_selection:
+      primary_domain: "dominant operational requirement; value MUST be a Registry `domains:` id — no invented domains"
+      secondary_domains:
+        max_count: 3                   # further relevant domains: trace-only
+        materiality_test: "a domain qualifies as secondary only if it adds a required capability or a binding constraint"
+        non_material_domains: "recorded in routing_trace as non-routing observations, never in secondary_domains"
+      cross_domain_requests: "minimum cross-domain skill set covering the COMPLETE request; never one skill per domain"
+
+  # ==========================================================================
+  # LAYER 2 — matching_rules
+  # How Registry metadata is matched against the request.
+  # ==========================================================================
+  matching_rules:
+    candidate_visibility:
+      status: normalized               # review-needed/rejected never visible
+      activation: eligible
+      path_prefix: skills/normalized/  # archived/ rejected/ review-needed/ incoming/ invisible
+    evaluation_metadata:               # ALL of these are evaluated per candidate
+      - triggers                       # english AND persian, equal in force
+      - domains
+      - purpose
+      - required_inputs
+      - outputs
+      - dependencies
+      - constraints
+      - verification_requirements
+      - activation_status
+    match_grades:
+      match: "trigger(s) + primary domain align with the operational intent; materially advances coverage — selection-eligible"
+      partial_match: "contributes to a required capability but insufficient alone — eligible only in combination"
+      weak_match: "related only (e.g., domain match without trigger match) — NEVER selected alone; recorded in excluded_skills"
+      no_match: "irrelevant — excluded"
+    trigger_fidelity:
+      use_registered_triggers_only: true
+      fuzzy_matching: false            # v2 keeps v0.1 policy: exact trigger match
+      broaden_triggers: false
+      persian_triggers_equal_force: true
+      infer_from_semantic_similarity: false
+    domain_only_match_grade: weak_match
+
+  # ==========================================================================
+  # LAYER 3 — selection_rules
+  # How the minimum sufficient set is selected; redundancy; conflicts; gaps.
+  # ==========================================================================
+  selection_rules:
+    principle: minimal_sufficiency
+    hard_caps:
+      max_selected_skills: 5           # context economy (mirrors token_policy)
+    optimization:
+      minimize: [skill_count, dependency_count, context_size, capability_overlap]
+      subject_to:
+        - request_coverage: complete
+        - dependency_closure: true
+        - required_capabilities: satisfied   # incl. required verification capability
+        - blockers: none
+    selection_order:                   # tie-breaking, fully ordered (determinism)
+      - highest_priority               # registry priority (1 = highest)
+      - narrowest_domain_match
+      - lowest_dependency_count
+      - registry_id_lexicographic      # final deterministic tiebreaker
+    prohibitions:
+      load_skills_because_related: false
+      load_entire_domains: false
+      load_whole_categories: false
+      speculative_loading: false
+      silent_substitution: false       # similar Skills never swapped on appearance
+    redundancy_rules:
+      source_of_truth: "Import Mode overlap record (processing-index.yaml duplicate_candidates + Import Reports)"
+      never_merge_skills: true
+      classifications: [exact_duplicate, partial_overlap, complementary, related_but_distinct, unrelated]
+      complementary_selected_together: retain_both
+      related_but_distinct: "select the one whose capability the request needs; exclude the other with the reason recorded"
+      removal_criterion: "a Skill is removed ONLY when its capability is unnecessary for complete request coverage"
+      record_decisions_in: routing_trace.redundancy_analysis
+    conflict_rules:
+      flag_do_not_resolve: true        # Router flags; user/downstream resolves
+      examples:
+        - "opposing confirmation semantics for the same signal without a declared tolerance"
+        - "contradictory constraint envelopes (confirmed-HTF assumption vs live-intrabar requirement)"
+        - "overlapping outputs with different contracts for the same artifact"
+      on_conflict: routing_status=conflict_detected, conflicts itemized
+    coverage_gap_rules:
+      missing_capability: "any required capability without a match/partial_match provider => coverage.missing_capabilities"
+      on_required_gap: routing_status=insufficient_coverage
+      gap_response: "name the absent Skill proposal (skill-routing rule 5: propose creation via a manifest decision row) — do NOT invent one"
+
+  # ==========================================================================
+  # LAYER 4 — dependency_rules
+  # Recursive resolution, closure, cycle/missing detection, activation.
+  # ==========================================================================
+  dependency_rules:
+    load_mandatory_dependencies: true
+    load_optional_dependencies: false  # optional deps enter ONLY via independent trigger match (then: selected, not dependency)
+    resolution:
+      recursive_closure: true          # resolve deps of deps until the graph is closed
+      add_only_required: true
+      depth_cap: 3                     # deeper chains => blocked with reason
+      provenance: "every resolved dependency recorded as {id, required_by}"
+    failure_modes:
+      circular_dependency: "routing_status=blocked; cycle path recorded in routing_trace.dependency_resolution"
+      missing_dependency: "routing_status=blocked; unresolved id named"
+      depth_exceeded: "routing_status=blocked"
+      registry_note: "current 77-Skill Registry has NO mandatory dependencies (all cross-references optional by Import design); rules apply in full and are tested regardless"
+
+  # ==========================================================================
+  # LAYER 5 — context_policy
+  # Context-budget rules, cost estimation, minimum-context loading.
+  # ==========================================================================
+  context_policy:
+    estimation_basis: "metadata-only at routing time (Registry metadata + typical Skill size); Skill bodies load later per meta/context_loading_policy.md"
+    size_levels:
+      S: "<= ~6k tokens (1-2 Skills, no deps)"
+      M: "~6k-15k tokens"
+      L: "~15k-30k tokens"
+      XL: "> ~30k tokens — requires written justification in routing_trace; caps likely violated => reduce before handoff"
+    max_total_context_share_for_skills: "60%"   # mirrors config/token_policy.yaml
+    authority_note: "budget authority = config/token_policy.yaml; this layer mirrors, never redefines it"
+    prefer_smallest_footprint: true
+
+  # ==========================================================================
+  # Excluded Skill categories (unchanged from v0.1 — never activated)
+  # ==========================================================================
+  excluded_categories:
+    - category: archived
+      path: skills/archived/
+      reason: "retired Skills must never enter context"
+    - category: rejected
+      path: skills/rejected/
+      reason: "failed review; never activated"
+    - category: review-needed
+      path: skills/review-needed/
+      reason: "not yet approved; never activated"
+    - category: incoming-unreviewed
+      path: skills/incoming/
+      reason: "raw staging; not discoverable until normalized into skills/normalized/"
+
+  # ==========================================================================
+  # Controlled-failure behaviors (unchanged policy, routing/2 status names)
+  # ==========================================================================
+  empty_registry:
+    behavior: controlled_failure       # never fall back to loading everything
+    routing_status: blocked
+    report:
+      request_class: null
+      selected_skills: []
+      reason: "registry.yaml contains no Skills (skills: [])"
+    pipeline_action: "stop before Formalization; record blocker; ask user to import Skills or proceed skill-less with explicit user consent"
+
+  no_trigger_match:
+    behavior: controlled_failure
+    routing_status: blocked
+    pipeline_action: "stop; report unmatched triggers via coverage.missing_capabilities + routing_trace.matching; do NOT broaden search to unrelated Skills"
+
+  zero_viable_candidates:
+    behavior: controlled_failure
+    routing_status: blocked
+    pipeline_action: "stop; record candidates considered + grades in routing_trace.matching"
+
+  # ==========================================================================
+  # Router output contract (routing/2 — full shape in meta/skill_router.md §13)
+  # ==========================================================================
+  output_format:
+    contract_version: "routing/2"
+    routing_status: null               # ready | ambiguous | insufficient_coverage | blocked | conflict_detected
+    request_class: null
+    primary_domain: null
+    secondary_domains: []
+    operational_intent: null
+    selected_skills: []                # [{id, reason, match}]
+    dependency_skills: []              # [{id, required_by}]
+    excluded_skills: []
+    coverage: {required_capabilities: [], covered_capabilities: [], missing_capabilities: []}
+    conflicts: []
+    ambiguity: []
+    reason: null
+    estimated_context_size: null       # S|M|L|XL + token estimate
+    routing_trace:
+      classification: null
+      matching: null
+      minimal_set_reasoning: null
+      dependency_resolution: null
+      redundancy_analysis: null
+    downstream:
+      next_stage: FORMALIZATION
+      allowed: false                   # true ONLY when routing_status == ready

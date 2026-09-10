@@ -1,0 +1,28 @@
+# TEST SPEC — Router: mandatory trace + recorded redundancy decisions (case 8)
+spec_id: TEST-ROUTING-008
+category: routing
+status: specified
+requirement: "Every routing decision carries a complete explainability trace, and redundancy decisions use the Import Mode overlap record without ever merging skills."
+
+preconditions:
+  - "Registry populated; Import Mode overlap record exists (skills/import-reports/processing-index.yaml duplicate_candidates — all resolved, with recorded relationships)."
+  - "Fixture A: request that selects one of a related_but_distinct pair (e.g., code-review-and-refactoring vs pine-debugging-and-testing)."
+  - "Fixture B: request that benefits from a complementary pair (e.g., quantitative-analysis + signal-fusion)."
+  - "Fixture C: any request producing a ready decision."
+
+steps:
+  - "Fixture A: run the Router; inspect routing_trace.redundancy_analysis and excluded_skills."
+  - "Fixture B: run the Router; inspect whether both complementary skills are retained."
+  - "Fixture C: run the Router; validate routing_trace completeness."
+
+expected:
+  - "Fixture A: the unneeded member of the pair is excluded with the reason recorded (related_but_distinct: select the capability the request needs); NO merge performed."
+  - "Fixture B: both complementary skills retained (complementary_selected_together: retain_both)."
+  - "Fixture C: routing_trace contains all five sections (classification, matching, minimal_set_reasoning, dependency_resolution, redundancy_analysis); candidates considered appear with grades; removals/retentions have reasons."
+  - "Overlap classifications used are exactly the Registry-recorded values: exact_duplicate | partial_overlap | complementary | related_but_distinct | unrelated."
+  - "A decision with a missing trace section is rejected as invalid output."
+
+must_not:
+  - "Skills must NEVER be merged, rewritten, or modified during redundancy analysis."
+  - "Redundancy removal must NOT drop a skill whose capability is required for complete coverage."
+  - "The trace must NOT omit excluded skills (the audit trail must be complete)."

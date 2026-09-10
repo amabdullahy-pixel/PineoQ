@@ -1,0 +1,38 @@
+# TEST SPEC — Contracts: scaffold invariants & acceptance criteria (supporting case)
+spec_id: TEST-CONTRACTS-003
+category: contracts
+status: specified            # specification only; verifiable against the scaffold TODAY
+requirement: >
+  Structural acceptance criteria of the architecture phase, expressed as
+  checkable invariants. This spec doubles as the acceptance checklist.
+
+invariants:
+  structure:
+    - "All required directories exist: config, formalization, feasibility, implementation, verification, meta, skills/{incoming,normalized,archived,rejected,review-needed}, templates, tests/{routing,skill-loading,formalization,contracts}."
+    - "All required root files exist: PROJECT_MANIFEST.yaml, AGENT_RULES.md, CHANGELOG.md, README.md."
+    - "All required config files exist: routing.yaml, feasibility.yaml, verification.yaml, token_policy.yaml."
+    - "All five contract schemas exist (formalization, feasibility, implementation, pre, post)."
+  registry:
+    - "skills/registry.yaml parses as YAML and its first content line under the header is `skills: []`."
+    - "Zero Skill entries present (no placeholders)."
+  empty_dirs:
+    - "skills/normalized/ contains no files."
+    - "skills/incoming/ contains only .gitkeep (no real Skills)."
+    - "skills/archived/, skills/rejected/, skills/review-needed/ contain no files."
+  no_pine:
+    - "No file in the scaffold contains Pine Script code (grep for //@version or indicator(/strategy( returns zero hits)."
+    - "implementation/contract_schema.yaml defines the contract only — contains no Pine code."
+  manifest:
+    - "PROJECT_MANIFEST.yaml parses as valid YAML."
+    - "status == architecture-stage; pine.version == \"6\"; skills stats == 0/0; implementation_allowed == false."
+  docs:
+    - "README.md documents all 8 pipeline stages with purpose and responsibility."
+    - "meta/skill_router.md documents the minimum-required-Skills strategy and the 10-step algorithm."
+    - "AGENT_RULES.md covers every mandated rule category."
+    - "CHANGELOG.md contains the 0.1.0 initial architecture scaffold entry with architectural decisions."
+  tests:
+    - "Eight test specifications exist covering the 8 mandated cases (this file supports the structural subset)."
+
+notes:
+  - "Cases 1-3 and 8 map to routing/skill-loading specs; cases 4+5 to TEST-FORMALIZATION-001; case 6 to TEST-CONTRACTS-001; case 7 to TEST-CONTRACTS-002."
+  - "Executable harnesses are a future phase; these specs are the authoritative expected behavior."

@@ -1,0 +1,28 @@
+# TEST SPEC — Skill loading: inactive directories are never loaded (case 3)
+spec_id: TEST-LOADING-001
+category: skill-loading
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  Skills located in skills/rejected/, skills/archived/, and
+  skills/review-needed/ must never be loaded or activated by the Router,
+  the context loader, or any pipeline stage.
+
+preconditions:
+  - "skills/registry.yaml contains one active-eligible trigger-matching entry
+     PLUS entries pointing into rejected/, archived/, and review-needed/
+     (or: those directories contain files, regardless of registry state)."
+
+steps:
+  - "Run the Router on a request that matches triggers of ALL entries (including the inactive ones)."
+  - "Inspect routing.selected_skills / dependency_skills / excluded_skills."
+  - "Run the context loader with the routing result."
+  - "Inspect everything loaded into context."
+
+expected:
+  - "No Skill whose path resolves under skills/rejected/, skills/archived/, or skills/review-needed/ appears in selected_skills or dependency_skills."
+  - "Inactive-path entries appear only in excluded_skills (if registered at all)."
+  - "The context loader loads zero bytes from the three inactive directories."
+  - "Policy references: config/routing.yaml excluded_categories; meta/context_loading_policy.md 'Prohibited loading'."
+
+must_not:
+  - "No stage may bypass the exclusion via dependency chains (a mandatory dep of an active Skill that lives in rejected/ must hard-fail routing with a recorded reason, not silently load)."

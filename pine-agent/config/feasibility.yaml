@@ -1,0 +1,158 @@
+# ============================================================================
+# FEASIBILITY CONFIGURATION — Pine Agent
+# ============================================================================
+# Governs the Feasibility stage, which runs AFTER Formalization and
+# Pre-Verification and BEFORE Implementation. Output: feasibility contract
+# (see feasibility/contract_schema.yaml).
+# ============================================================================
+
+feasibility:
+  status: enabled
+
+  # Each check: severity block => any fail becomes a blocker (stops pipeline);
+  # severity warn  => recorded in `warnings`, surfaced to user, does not block.
+  checks:
+
+    - id: mathematical_validity
+      field: mathematically_valid
+      description: >
+        All formulas are mathematically well-defined: no division by zero,
+        no undefined logarithms/roots of negatives, no contradictory
+        conditions, units and scales are consistent across terms.
+      severity: block
+
+    - id: statistical_meaningfulness
+      field: statistically_meaningful
+      description: >
+        Thresholds, lookbacks, and windows have a defensible basis (adaptive,
+        configurable, or justified constant). Magic numbers without rationale
+        are warnings, not blockers.
+      severity: warn
+
+    - id: data_availability
+      field: required_data_available
+      description: >
+        Every required data source exists on TradingView: symbol types
+        (e.g., OI/funding exist only on supported markets), request.security
+        targets resolvable, volumes available on the target class of symbols.
+      severity: block
+
+    - id: pine_compatibility
+      field: pine_compatible
+      description: >
+        The design is expressible in Pine Script v6: required built-ins exist,
+        no unsupported language features assumed, v6 semantics respected
+        (lazy and/or, series history model, type system).
+      severity: block
+
+    - id: tradingview_execution_model
+      field: tradingview_compatible
+      description: >
+        Design respects the TradingView execution model: bar-by-bar execution,
+        rollback of realtime variables, request.* call budget (<= ~5-40 by
+        plan tier), plot/label/line/box budgets, no future-data assumptions.
+      severity: block
+
+    - id: mtf_validity
+      field: mtf_valid
+      description: >
+        Multi-timeframe constructs are valid: HTF data obtained via
+        request.security with disciplined offset/lookahead policy; LTF
+        requests only where supported; TF-unit consistency (minutes vs bars).
+        Not applicable when mtf=false in the formalization contract.
+      severity: block
+
+    - id: repainting_risk
+      field: repaint_risk
+      description: >
+        Repaint risk classified (none/low/medium/high) with mechanism named
+        (security lookahead, unconfirmed HTF bars, intrabar pivot confirmation,
+        realtime-only branches). High risk without explicit user acceptance
+        is a blocker.
+      severity: block
+
+    - id: runtime_limits
+      field: runtime_risk
+      description: >
+        Loop bounds are finite and small; array sizes bounded; no unbounded
+        recursion; execution time compatible with TradingView limits
+        (loop iterations and total time budgets).
+      severity: block
+
+    - id: numerical_stability
+      field: numerical_stability
+      description: >
+        Accumulators guarded against na-poisoning; variance-type computations
+        clamped against catastrophic cancellation; float comparisons use
+        tolerances; extreme values (gaps, zero-range bars) handled.
+      severity: block
+
+  # --- Verdict rules ----------------------------------------------------------
+  verdict:
+    proceed_when: "all block-severity checks pass AND blockers list is empty"
+    warn_user_when: "warnings list is non-empty (warnings do not block)"
+    fail_when: "any block-severity check fails OR any blocker recorded"
+    on_fail: "record blockers with reasons; pipeline stops before Implementation Planning"
+    output_contract: feasibility/contract_schema.yaml
+
+# ============================================================================
+# PHASE 7 ADDITIONS — capability knowledge base (engine: feasibility.pl)
+# ============================================================================
+# EVIDENCE POLICY (meta/feasibility_procedure.md §3): entries are seeded ONLY
+# from Import-Mode-preserved records (verified events or negative claims) or
+# marked requires_verification. No invented facts; uncertainty stays unknown.
+# status: confirmed | unavailable | requires_verification
+# critical: true => an unresolved/unavailable match BLOCKS; false => warns.
+# ============================================================================
+
+capability_kb:
+  - { id: 'CAP-MTF-HTF',          domain: 'mtf',      status: 'confirmed', critical: 'true',  keywords: 'higher timeframe|higher time frame|htf|multi timeframe|multi-timeframe', basis: 'request.security is core documented Pine v6 functionality (mtf-engineering skill, Import Mode)' }
+  - { id: 'CAP-MTF-LTF',          domain: 'mtf',      status: 'confirmed', critical: 'true',  keywords: 'lower timeframe|lower time frame|ltf|intrabar detail', basis: 'request.security_lower_tf is documented Pine v6 functionality (mtf-engineering skill, Import Mode)' }
+  - { id: 'CAP-ALERTS',           domain: 'alerts',   status: 'confirmed', critical: 'true',  keywords: 'alert|notification', basis: 'alertcondition()/alert() are documented Pine v6 functionality (alerts-and-webhooks skill, Import Mode)' }
+  - { id: 'CAP-WEBHOOK',          domain: 'alerts',   status: 'confirmed', critical: 'false', keywords: 'webhook', basis: 'TradingView webhook alerts documented (alerts-and-webhooks skill, Import Mode)' }
+  - { id: 'CAP-SESSIONS',         domain: 'market',   status: 'confirmed', critical: 'false', keywords: 'extended hours|extended session|pre-market|premarket|after-hours|after hours|session filter', basis: 'sessions/extended hours are core Pine functionality (data-integrity, market-microstructure skills, Import Mode)' }
+  - { id: 'CAP-ECONOMIC',         domain: 'data',     status: 'confirmed', critical: 'true',  keywords: 'economic data|cpi|gdp|economic calendar release', basis: 'request.economic() signature and ISO codes VERIFIED against official support article (batch-006 verification event)' }
+  - { id: 'CAP-BIDASK',           domain: 'data',     status: 'confirmed', critical: 'true',  keywords: 'bid|ask|spread', basis: 'bid/ask 1T-only semantics VERIFIED against official chart-information docs (batch-006 verification event)' }
+  - { id: 'CAP-BARMAGNIFIER',     domain: 'runtime',  status: 'confirmed', critical: 'false', keywords: 'bar magnifier', basis: 'Bar Magnifier 200k-LTF-bar budget VERIFIED (batch-006 verification event)' }
+  - { id: 'CAP-PINELOGS',         domain: 'runtime',  status: 'confirmed', critical: 'false', keywords: 'pine logs|debug log|log info', basis: 'Pine Logs VERIFIED against official debugging docs (batch-007 verification event)' }
+  - { id: 'CAP-DIVZERO',          domain: 'language', status: 'requires_verification', critical: 'false', keywords: 'division by zero runtime value|divide by zero result', basis: 'UNVERIFIED claim preserved at import: official docs silent on runtime results; community evidence indicates runtime na (batch-002 record)' }
+  - { id: 'CAP-WAVELET',          domain: 'language', status: 'requires_verification', critical: 'true',  keywords: 'wavelet', basis: 'no Import Mode record; official-documentation verification required before implementation' }
+  - { id: 'CAP-QUANDL',           domain: 'data',     status: 'unavailable', critical: 'true',  keywords: 'quandl', basis: 'request.quandl() REMOVED — preserved negative claim (batch-002 verify-before-use gate)' }
+  - { id: 'CAP-ORDERBOOK',        domain: 'data',     status: 'unavailable', critical: 'true',  keywords: 'order book|orderbook|depth of market|level 2 data|level ii data', basis: 'no order-book access — preserved negative claim (batch-006)' }
+  - { id: 'CAP-FEARGREED',        domain: 'data',     status: 'unavailable', critical: 'true',  keywords: 'fear and greed|fear & greed|sentiment index', basis: 'no native Fear&Greed index — preserved negative claim (batch-006)' }
+  - { id: 'CAP-NEWS',             domain: 'data',     status: 'unavailable', critical: 'true',  keywords: 'news feed|news headlines', basis: 'no news data access — preserved negative claim (batch-006)' }
+  - { id: 'CAP-CALENDAR',         domain: 'data',     status: 'unavailable', critical: 'true',  keywords: 'economic holiday calendar|exchange holiday calendar access', basis: 'no calendar access — preserved negative claim (batch-006)' }
+  - { id: 'CAP-BUILTIN-PATTERNS', domain: 'language', status: 'unavailable', critical: 'true',  keywords: 'built-in candlestick pattern|native candlestick detection', basis: 'no built-in candlestick patterns — preserved negative claim (batch-004)' }
+  - { id: 'CAP-BUILTIN-FFT',      domain: 'language', status: 'unavailable', critical: 'false', keywords: 'built-in fft|native fft|built-in fourier', basis: 'no built-in FFT/wavelet — preserved negative claim (batch-005); custom implementation preserves semantics (recorded, not substituted)' }
+  - { id: 'CAP-BUILTIN-OPT',      domain: 'runtime',  status: 'unavailable', critical: 'false', keywords: 'built-in optimizer|auto optimization', basis: 'no built-in optimizer — preserved negative claim (batch-006)' }
+
+# Data-kind vocabulary for required_data entries (F04).
+data_kinds:
+  obtainable:
+    - { kind: 'price',    status: 'confirmed', basis: 'OHLCV price data is core TradingView data' }
+    - { kind: 'htf price', status: 'confirmed', basis: 'HTF data via request.security (mtf-engineering skill)' }
+    - { kind: 'ltf price', status: 'confirmed', basis: 'LTF data via request.security_lower_tf (mtf-engineering skill)' }
+    - { kind: 'volume',   status: 'confirmed', basis: 'volume is core OHLCV data; symbol-specific coverage verified downstream' }
+    - { kind: 'economic', status: 'confirmed', basis: 'request.economic() VERIFIED (batch-006 verification event)' }
+  conditional:
+    - { kind: 'bid',   rule: '1T-only', basis: 'bid/ask 1T-only semantics VERIFIED (batch-006)' }
+    - { kind: 'ask',   rule: '1T-only', basis: 'bid/ask 1T-only semantics VERIFIED (batch-006)' }
+    - { kind: 'spread', rule: '1T-only', basis: 'bid/ask 1T-only semantics VERIFIED (batch-006)' }
+  requires_verification:
+    - { kind: 'open interest', basis: 'OI exists only on supported markets (config feasibility.data_availability note) — symbol-dependent' }
+    - { kind: 'funding rate',  basis: 'funding rate exists only on supported markets (config feasibility.data_availability note) — symbol-dependent' }
+  unavailable:
+    - { kind: 'order book',   basis: 'no order-book access — preserved negative claim (batch-006)' }
+    - { kind: 'sentiment',    basis: 'no native sentiment index — preserved negative claim (batch-006)' }
+    - { kind: 'news',         basis: 'no news data access — preserved negative claim (batch-006)' }
+    - { kind: 'quandl',       basis: 'request.quandl() REMOVED (batch-002)' }
+
+# Advisory performance hints (F09). These are CONSERVATIVE ADVISORY thresholds,
+# not platform limits: exact request.*/object budgets are tier-dependent and
+# stay UNKNOWN_REQUIRES_VERIFICATION (never invented as hard limits).
+performance_hints:
+  request_calls_warn: '4'            # required_data entries beyond this warn (tier budget unknown)
+  drawing_tokens: 'label|line|box|table|plot'
+  loop_keywords: 'for every bar|loop over all|iterate over all|every bar in history|all historical bars'
+  realtime_tokens: 'every tick|intrabar|realtime|tick by tick'
+  onclose_tokens: 'on bar close|on close|bar close|confirmed'

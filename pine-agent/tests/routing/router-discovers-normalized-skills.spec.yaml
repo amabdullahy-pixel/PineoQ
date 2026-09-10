@@ -1,0 +1,32 @@
+# TEST SPEC — Router: discovery of normalized Skills (case 2)
+spec_id: TEST-ROUTING-002
+category: routing
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  Once Skills are added to skills/normalized/ and registered in
+  skills/registry.yaml (future Import/Normalize phase), the Router must be able
+  to discover and select them via trigger matching.
+
+preconditions:
+  - "skills/registry.yaml contains at least one entry with:"
+  - "  status: active, path under skills/normalized/, non-empty triggers."
+  - "A user request containing at least one trigger string of that Skill."
+
+steps:
+  - "Run the Router on the request."
+  - "Router extracts triggers from the request."
+  - "Router searches skills/registry.yaml for exact trigger matches."
+  - "Router selects the matching Skill and its mandatory dependencies."
+
+expected:
+  - "routing.status == routed"
+  - "routing.selected_skills includes the matching Skill id."
+  - "routing.dependency_skills includes every mandatory dependency (transitive, bounded by max_dependency_depth)."
+  - "routing.excluded_skills lists ALL other registry entries (audit trail)."
+  - "routing.estimated_context_size is a number > 0."
+  - "The routing contract is passed to Formalization."
+
+must_not:
+  - "Skills with status draft/review-needed/archived/rejected must NOT be selected."
+  - "Optional dependencies must NOT be auto-selected unless independently trigger-matched."
+  - "The Router must NOT select more than max_selected_skills (config/routing.yaml)."

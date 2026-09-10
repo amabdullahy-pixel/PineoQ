@@ -1,0 +1,97 @@
+# ============================================================================
+# CONTRACT SCHEMA — Feasibility stage
+# ============================================================================
+# Runs AFTER Formalization and Pre-Verification, BEFORE Implementation
+# Planning. Check semantics and severities are configured in
+# config/feasibility.yaml. Narrative authority: meta/feasibility_procedure.md.
+#
+# v1.1 (Phase 7 — additive; NO gate redesign, NO status-enum change):
+#   + approved_routing_id, verification_id, feasibility_id — identity chain
+#     completion (mirrors formalization/pre-verification v1.1;
+#     feasibility_id = "feas-" + 12 hex of sha256, deterministic — see
+#     meta/feasibility_procedure.md §7)
+#   + feasibility_status: FEASIBLE | FEASIBLE_WITH_WARNINGS |
+#     PARTIALLY_FEASIBLE | NOT_FEASIBLE | BLOCKED | INVALID_INPUT — the
+#     machine result vocabulary mandated for Phase 7. `status` KEEPS the
+#     v1.0 enum (pending|in_progress|passed|failed|blocked); mapping:
+#     FEASIBLE / FEASIBLE_WITH_WARNINGS -> passed;
+#     PARTIALLY_FEASIBLE / NOT_FEASIBLE -> failed;
+#     BLOCKED / INVALID_INPUT -> blocked.
+#   + checks[] / findings[] / unknowns[] / partial_items[] /
+#     unsupported_items[] / capabilities[] / constraints[] /
+#     data_requirements[] / platform_requirements[] / traceability /
+#     implementation_allowed / implementation_planning_allowed / next_stage
+#     — Phase-7 fields (all additive).
+#   + engine: feasibility/feasibility.pl (core Perl, no CPAN).
+#   All v1.0 fields preserved below (unchanged) — backward compatible.
+# ============================================================================
+
+schema_version: "1.1"
+stage: feasibility
+predecessor: pre_verification      # feasibility follows pre-verification in the pipeline
+successor: implementation_planning
+
+feasibility:
+  # --- Identity -----------------------------------------------------------------
+  request_id: null                 # links to the formalization contract of the same request
+  approved_routing_id: null        # mirrored from the upstream contracts (v1.1)
+  formalization_id: null           # approved formalization this assessment is based on
+  verification_id: null            # Phase-6 pre-verification id mirrored (v1.1)
+  feasibility_id: null             # "feas-" + 12 hex of sha256 over the canonical body (v1.1; deterministic)
+
+  # --- Check results (null = not assessed; bool = assessed) — v1.0, unchanged -----
+  mathematically_valid: null       # formulas well-defined; no div-by-zero, undefined ops
+  statistically_meaningful: null   # thresholds/lookbacks defensible (warning-level)
+  required_data_available: null    # all data sources exist on TradingView for target symbols
+  pine_compatible: null            # design expressible in Pine Script v6
+  tradingview_compatible: null     # respects TV execution model + platform budgets
+  mtf_valid: null                  # MTF design valid (n/a -> true when formalization.mtf=false)
+  repaint_risk: null               # none | low | medium | high (+ mechanism)
+  runtime_risk: null               # none | low | medium | high (loops, arrays, time)
+  numerical_stability: null        # na-poisoning, cancellation, tolerance handling
+
+  # --- Phase-7 machine fields ------------------------------------------------------
+  feasibility_status: null         # FEASIBLE | FEASIBLE_WITH_WARNINGS | PARTIALLY_FEASIBLE |
+                                   # NOT_FEASIBLE | BLOCKED | INVALID_INPUT
+  checks: []                       # [{ check_id, domain, verdict: pass|warn|fail, findings: [ids] }]
+                                   # 12 fixed checks FB01..FB12 (fixed order — deterministic)
+  findings: []                     # [{ id, check_id, severity: blocker|warning|info, code,
+                                   #    message, refs: [contract element ids] }]
+  blockers: []                     # [{ id, check_id, reason }] — ANY entry halts pipeline (v1.0 shape kept)
+  warnings: []                     # [{ id, check_id, code, message }] — surfaced, non-blocking
+  unknowns: []                     # [{ id, subject, critical, status: UNKNOWN_REQUIRES_VERIFICATION, refs }]
+  partial_items: []                # [{ requirement, feasible_part, non_feasible_part, semantic_difference }]
+  unsupported_items: []            # [{ subject, basis, refs }] — capability/data marked unavailable (never substituted)
+  capabilities: []                 # [{ capability, status: confirmed|requires_verification, basis|null }]
+  constraints: []                  # documented platform constraints applied to this assessment (with basis)
+  data_requirements: []            # mirrored required_data + availability verdict per entry
+  platform_requirements: []        # execution-model requirements derived mechanically (bar-close vs intrabar, MTF, alerts)
+  traceability:                    # upstream linkage (mirrored verbatim)
+    source_skills: []
+    verification_requirements: []
+    implementation_constraints: []
+
+  # --- Findings -------------------------------------------------------------------  (v1.0, unchanged)
+  recommendation: null             # proceed | proceed_with_changes | reject | needs_user_input
+  notes: []                        # free-form engineering notes for downstream stages
+
+  # --- Status ------------------------------------------------------------------------
+  status: pending                  # pending | in_progress | passed | failed | blocked (v1.0 enum kept)
+  implementation_allowed: false    # mirrors upstream gate AND local verdict (v1.1)
+  implementation_planning_allowed: false  # true iff feasibility_status in {FEASIBLE, FEASIBLE_WITH_WARNINGS}
+  next_stage: null                 # IMPLEMENTATION_PLANNING | HALT
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "Feasibility occurs after Formalization and Pre-Verification and before Implementation Planning."
+  - "Handoff accepted ONLY from a Phase-6 result with result PASS|PASS_WITH_WARNINGS, blockers [], feasibility_allowed true (B-HANDOFF otherwise)."
+  - "Any blockers entry => NO implementation and NO implementation planning."
+  - "warnings do not block but MUST be surfaced to the user before implementation."
+  - "ONLY feasibility_status FEASIBLE or FEASIBLE_WITH_WARNINGS sets implementation_planning_allowed=true and next_stage=IMPLEMENTATION_PLANNING."
+  - "PARTIALLY_FEASIBLE / NOT_FEASIBLE / BLOCKED / INVALID_INPUT => next_stage=HALT — the gate is never weakened."
+  - "No silent fallback: unavailable capability/data is recorded (unsupported_items), never substituted (change requires explicit downstream user decision)."
+  - "Unknown platform capabilities stay UNKNOWN_REQUIRES_VERIFICATION; critical unknowns block, advisory unknowns warn."
+  - "recommendation: needs_user_input => pipeline pauses until the user answers."
+  - "A passed feasibility contract (approved_feasibility_id) is REQUIRED by the implementation contract."

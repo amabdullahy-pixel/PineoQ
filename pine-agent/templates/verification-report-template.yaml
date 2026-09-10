@@ -1,0 +1,74 @@
+# ============================================================================
+# TEMPLATE — Verification Report
+# ============================================================================
+# Reusable template for future verification reports. Copy per request and fill
+# ONE of the two stage sections (pre or post) — the stages are separate and
+# their reports must never be merged. Delete the unused stage block.
+# Schemas: verification/pre_contract_schema.yaml, verification/post_contract_schema.yaml
+# ============================================================================
+
+report:
+  report_id: <VR-YYYYMMDD-XX>
+  request_id: <request-id>
+  generated_at: <YYYY-MM-DD HH:MM>
+  stage: <pre_verification | post_verification>     # exactly one stage per report
+
+  # ---------------------------------------------------------------------------
+  # SECTION A — PRE-IMPLEMENTATION VERIFICATION (delete when reporting post)
+  # ---------------------------------------------------------------------------
+  pre_verification:
+    formalization_id: <formalization-contract-id>
+    logic_valid: <true|false>
+    math_valid: <true|false>
+    variables_defined: <true|false>
+    assumptions_documented: <true|false>
+    ambiguities_resolved_or_recorded: <true|false>
+    edge_cases_checked: <true|false>
+    required_data_confirmed: <true|false>
+    mtf:
+      applicable: <true|false>
+      validated: <true|false>
+      notes: "<HTF/LTF policy, TF-unit findings>"
+    repaint_risk:
+      classification: <none|low|medium|high>
+      mechanism: "<named mechanism>"
+      user_accepted: <true|false|null>    # null when not high
+    blockers: []                          # [{ id, check_id, reason }]
+    warnings: []
+    status: <pending|passed|failed|blocked>
+
+  # ---------------------------------------------------------------------------
+  # SECTION B — POST-IMPLEMENTATION VERIFICATION (delete when reporting pre)
+  # ---------------------------------------------------------------------------
+  post_verification:
+    implementation_id: <implementation-contract-id>
+    syntax: <pass|fail|statically_reviewed>
+    type_system: <pass|fail|statically_reviewed>
+    scope: <pass|fail|statically_reviewed>
+    runtime_behavior: <pass|fail|statically_reviewed>
+    signal_equivalence: <pass|fail>       # vs approved formalization contract
+    edge_cases_runtime: <pass|fail>
+    repainting:
+      classification: <none|low|medium|high>
+      matches_classification: <true|false>
+      lookahead_policy_explicit: <true|false>
+    mtf_behavior: <pass|fail|not_applicable>
+    performance: <pass|fail>
+    resource_budgets:
+      request_calls: <count>
+      plot_count: <count>
+      drawing_objects: <bounded|unbounded>
+    alert_behavior: <pass|fail>
+    blockers: []                          # [{ id, check_id, reason }]
+    warnings: []
+    status: <pending|passed|failed>
+    verdict: <validated|rollback_to_implementation|needs_user_compile>
+
+  # ---------------------------------------------------------------------------
+  # COMMON
+  # ---------------------------------------------------------------------------
+  evidence:
+    - "<check performed> -> <result> -> ACTUALLY VERIFIED | STATICALLY REVIEWED"
+    # Honesty rule: label every piece of evidence. A TradingView compile claim
+    # is ACTUALLY VERIFIED only when the user reported it.
+  notes: []

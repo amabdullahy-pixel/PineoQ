@@ -1,0 +1,29 @@
+# TEST SPEC — Skill loading: no trigger match => nothing loads (case 8)
+spec_id: TEST-LOADING-002
+category: skill-loading
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  When no registry Skill's triggers match the extracted request triggers,
+  no Skill may be loaded and the Router must fail in a controlled manner.
+
+preconditions:
+  - "skills/registry.yaml contains >= 1 active Skill whose triggers do NOT overlap the request."
+  - "The user request contains no registered trigger strings."
+
+steps:
+  - "Run the Router on the request."
+  - "Router extracts triggers; searches registry for exact matches."
+  - "Zero Skills match."
+
+expected:
+  - "routing.status == blocked"
+  - "routing.selected_skills == [] and routing.dependency_skills == []"
+  - "routing.unresolved_triggers lists every extracted trigger that found no Skill."
+  - "routing.excluded_skills lists all registry entries (all excluded)."
+  - "Pipeline stops before Formalization; nothing enters context."
+  - "The user is informed which triggers were unresolved."
+
+must_not:
+  - "The Router must NOT broaden/fuzzy-match to 'closest' Skills (fuzzy disabled in v0.1)."
+  - "The Router must NOT load the full catalog as a fallback."
+  - "The context loader must NOT receive any Skill body."

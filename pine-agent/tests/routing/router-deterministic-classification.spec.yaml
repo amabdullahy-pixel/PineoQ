@@ -1,0 +1,30 @@
+# TEST SPEC — Router: deterministic classification + routing/2 contract (case 3)
+spec_id: TEST-ROUTING-003
+category: routing
+status: specified            # design-phase specification; executable harness is a future phase
+requirement: "Every request receives a deterministic classification and a routing decision conforming to contract routing/2 (meta/skill_router.md §13)."
+
+preconditions:
+  - "skills/registry.yaml is populated (77 Skills, Import Mode output)."
+  - "config/routing.yaml v2 layer structure is in force."
+  - "The same request text is submitted twice against the same registry revision."
+
+steps:
+  - "Run the Router on request R (e.g., 'Why does my supertrend signal flip intrabar?')."
+  - "Record the full routing contract."
+  - "Run the Router again on the identical text with no state changes."
+  - "Compare both contracts."
+
+expected:
+  - "Both runs produce byte-identical contracts (determinism requirement, §16)."
+  - "Exactly one primary request_class from config/routing.yaml classification_rules.request_classes (here: debugging)."
+  - "operational_intent is one explicit sentence."
+  - "primary_domain is a Registry domains: id; secondary_domains ⊆ Registry domain ids, count ≤ 3."
+  - "The contract contains every routing/2 field: contract_version, routing_status, request_class, primary_domain, secondary_domains, operational_intent, selected_skills[{id, reason, match}], dependency_skills[{id, required_by}], excluded_skills, coverage{required, covered, missing}, conflicts, ambiguity, reason, estimated_context_size, routing_trace{5 sections}, downstream{next_stage, allowed}."
+  - "routing_status ∈ {ready, ambiguous, insufficient_coverage, blocked, conflict_detected}."
+  - "downstream.allowed == true only when routing_status == ready."
+
+must_not:
+  - "Classification must NOT vary with session state, time, or randomness."
+  - "primary_domain must NOT be an invented domain absent from the Registry."
+  - "The contract must NOT omit routing_trace — a decision without a trace is invalid."

@@ -1,0 +1,186 @@
+# ============================================================================
+# PROJECT MANIFEST — Pine Agent (architecture scaffold)
+# ============================================================================
+# Authoritative machine-readable snapshot of the project. Update on every
+# meaningful change; narrative context lives in README.md and CHANGELOG.md.
+# ============================================================================
+
+project:
+  name: pine-agent
+  version: "0.1.0"
+  status: implementation-stage # architecture-stage | import-stage | router-design-stage | router-implementation-stage | formalization-stage | pre-verification-stage | feasibility-stage | implementation-planning-stage | implementation-stage | release (PHASE 3 design + PHASE 4 Router engine + PHASE 5 Formalization engine + PHASE 6 Pre-Verification engine + PHASE 7 Feasibility engine + PHASE 8 Implementation Planning engine + PHASE 9 Implementation engine complete 2026-09)
+  objective: >
+    Build a modular Agent for Pine Script v6 that processes user requests
+    through a gated pipeline: Skill Routing -> Formalization -> Pre-Verification
+    -> Feasibility -> Implementation Planning -> Pine Implementation ->
+    Post-Verification. This phase delivers ONLY the architectural scaffold:
+    contracts, configuration, documentation, templates, and test specifications.
+
+pine:
+  version: "6"
+  compatibility_policy: >
+    All future generated code must target Pine Script v6 exactly. No legacy
+    v5/v4 fallbacks may be emitted by the Implementation stage.
+
+pipeline:
+  order:
+    - request
+    - skill_routing
+    - formalization
+    - pre_verification
+    - feasibility
+    - implementation_planning
+    - implementation
+    - post_verification
+  stage_gates:
+    formalization: "blocks implementation; output is the formalization contract"
+    pre_verification: "must pass with zero blockers before feasibility/implementation"
+    feasibility: "must pass with zero blockers before implementation"
+    implementation: "requires approved formalization_id + feasibility_id"
+    post_verification: "final gate; separate contract from pre-verification"
+
+constraints:
+  - "No code generation before Formalization"
+  - "No implementation if Pre-Verification has blockers"
+  - "No implementation if Feasibility fails (any blocker)"
+  - "Ambiguities are recorded, never silently resolved"
+  - "Assumptions are recorded explicitly"
+  - "Repainting control is mandatory on every request"
+  - "MTF behavior must be validated on every multi-timeframe request"
+  - "Pine Script v6 compatibility is non-negotiable"
+  - "Only the minimum required Skills and their mandatory dependencies are loaded"
+  - "Never load all Skills by default"
+  - "Pre-Verification and Post-Verification are separate stages with separate contracts"
+  - "Scaffold-phase constraint (historical): no Pine Script code, no Skills, empty registry — superseded by Import Mode completion (see skills/registry.yaml and skills/import-reports/final-import-report.md); the no-Pine-code rule itself remains in force"
+
+skills:
+  imported: 77                        # all raw sources processed (batch-001..008)
+  normalized: 77                      # all status:normalized, activation:eligible, validation_status:passed
+  registry_state: populated           # 77 entries; full dependency closure; zero unresolved duplicate candidates
+  directories:
+    incoming: 77 raw sources preserved (never modified)
+    normalized: 77 skills in 7 layer directories
+    archived: empty
+    rejected: empty
+    review-needed: empty
+
+implementation_allowed: false          # global gate; mirrored per-contract
+
+architectural_decisions:
+  - id: AD-01
+    decision: "Gated pipeline with hard stage ordering"
+    rationale: "Formalization before code, Feasibility before Implementation, dual verification — prevents ad-hoc code generation and silent guessing."
+  - id: AD-02
+    decision: "Every stage communicates via a YAML contract schema"
+    rationale: "Machine-checkable handoffs; status and blockers are inspectable between stages."
+  - id: AD-03
+    decision: "Minimum-required Skill loading via registry-trigger routing"
+    rationale: "Context economy; the Router must never load all Skills."
+  - id: AD-04
+    decision: "Registry starts empty; no placeholder Skills"
+    rationale: "Skills enter only through a future Import/Normalize phase; prevents junk catalog."
+  - id: AD-05
+    decision: "ambiguities and blockers are first-class contract fields"
+    rationale: "Unresolvable input or failed stage is recorded, not guessed around."
+  - id: AD-06
+    decision: "Separate pre_contract_schema and post_contract_schema"
+    rationale: "Pre-checks intent (logic/math/data) before code exists; post-checks artifact (syntax/runtime/repaint/perf) after."
+  - id: AD-07
+    decision: "Router contract upgraded to routing/2 (design only; no executable logic)"
+    rationale: "routing_status gains a five-value semantics (ready | ambiguous | insufficient_coverage | blocked | conflict_detected) with a mandatory 5-section routing_trace; v0.1 controlled-failure behaviors (empty registry, no-match) are preserved unchanged."
+  - id: AD-08
+    decision: "Five-layer routing configuration (classification | matching | selection | dependency | context) with strict separation: Registry holds Skill knowledge, routing.yaml holds rules, the Router is the decision engine, Formalization owns contract conversion"
+    rationale: "Prevents skill content from leaking into policy files and routing logic from leaking into Skills; deterministic, explainable selection requires the separation."
+  - id: AD-09
+    decision: "Formalization approval is expressed solely by implementation_allowed (schema v1.1): true iff status=completed AND blockers empty AND every behavior-affecting ambiguity is resolved_by_user; resolved_assumed never unlocks; supersedes records revisions without altering the content-derived identity chain"
+    rationale: "Single unambiguous gate field for the next stage's ordering check (--gate-check); assumed resolutions can never silently authorize implementation; content-addressed ids make revisions auditable."
+  - id: AD-10
+    decision: "Feasibility is an evidence-bounded decision layer (schema v1.1): capability/data claims come ONLY from Import-Mode-preserved evidence (confirmed | unavailable | requires_verification); unavailable items are recorded in unsupported_items and NEVER substituted; unknown platform limits stay UNKNOWN_REQUIRES_VERIFICATION (load-bearing unknowns block, prose unknowns warn); implementation_planning_allowed=true iff FEASIBLE | FEASIBLE_WITH_WARNINGS"
+    rationale: "Feasibility answers CAN/SHOULD questions without inventing facts; no-silent-fallback plus advisory-only limits keep the gate honest; --gate-check --feasibility gives Implementation Planning a machine-checkable ordering gate."
+
+known_bugs: []                         # none at architecture stage
+
+validation_results:
+  - "Directory structure matches the required tree"
+  - "[architecture-stage] skills/registry.yaml is empty (skills: [])"
+  - "[architecture-stage] skills/normalized/ and skills/incoming/ contain no real Skills"
+  - "No Pine Script code exists anywhere in this scaffold"
+  - "All contract schemas, configs, meta docs, and templates present"
+  - "8 initial test specifications created"
+  - "[import-stage] 77/77 raw Skills processed; 77 normalized; 0 review-needed; 0 rejected; 0 failed"
+  - "[import-stage] Registry: 77 unique entries, all eligible; 154/154 path references resolve; full dependency closure"
+  - "[import-stage] Final safety checklist passed (see skills/import-reports/final-import-report.md)"
+  - "[router-design-stage] meta/skill_router.md v2.0.0 Design Specification created (14-stage pipeline, routing/2 contract, determinism rules) — no executable Router logic exists"
+  - "[router-design-stage] config/routing.yaml restructured into the five mandated layers; v0.1 caps/behaviors preserved (max 5 skills, depth 3, no fuzzy, controlled failures)"
+  - "[router-design-stage] 6 new routing test specifications (TEST-ROUTING-003..008); all existing v0.1 routing tests remain compatible"
+  - "[router-design-stage] No Skills created/modified; no Pine code generated; architecture files beyond the Router design untouched"
+  - "[router-implementation-stage] Router decision engine implemented: skills/agent/router.pl (core Perl, no dependencies) executing the routing/2 spec end to end"
+  - "[router-implementation-stage] Built-in selftest suite green: 80/80 assertions covering TEST-ROUTING-001..008 (all 8 routing test specs)"
+  - "[router-implementation-stage] Output verified byte-identical across processes (determinism, spec §16); status gate coherent (ready exits 0, all non-ready exit 2, never reaches Formalization)"
+  - "[router-implementation-stage] Registry (77/77), all 77 Skill files, and raw sources (223,995 bytes) untouched by the engine; no Pine code in any Phase-4 artifact"
+  - "[router-implementation-stage] 10 concrete registry-backed scenario fixtures added (tests/routing/scenarios/scenarios.yaml: debug, MTF, multi-domain, complementary/redundancy, Persian coverage gap, ambiguity gate); executable via router.pl --scenarios — 57/57 assertions green against the real registry"
+  - "[formalization-stage] meta/formalization_procedure.md created (narrative authority: identity chain, mechanical extraction R1–R9, ambiguity taxonomy, determinism, gate semantics)"
+  - "[formalization-stage] formalization/contract_schema.yaml upgraded to v1.1 (approval solely via implementation_allowed; supersedes excluded from content hash; v1.0 fields preserved — backward compatible)"
+  - "[formalization-stage] formalization/formalize.pl implemented (core Perl, zero dependencies): routing/2 handoff gate (non-ready/malformed → blocked, exit 2), mechanical verbatim extraction, mechanical repaint classification, B-PINE no-code gate, ambiguity gate (resolved_by_user only), content-addressed SHA-256 identity, --gate-check ordering gate, UTF-8/Persian round-trip"
+  - "[formalization-stage] Formalization selftest green: 106/106 assertions (TEST-FORMAL-001..013), including the TEST-FORMALIZATION-001 must_not case (resolved_assumed never unlocks implementation)"
+  - "[formalization-stage] Router regression after Phase 5: selftest 80/80 + scenarios 57/57 — routing untouched; Registry 77/77, Skill files, raw sources, config/ untouched; no Pine code in any Phase-5 artifact"
+  - "[pre-verification-stage] meta/pre_verification_procedure.md created (narrative authority: 14 mechanical checks PC01–PC14, severity taxonomy, canonical verification_id body, gate semantics)"
+  - "[pre-verification-stage] verification/pre_contract_schema.yaml upgraded to v1.1 (additive: contract_sha in id body, gate-check on emitted result; v1.0 fields preserved — backward compatible)"
+  - "[pre-verification-stage] verification/pre_verify.pl implemented (core Perl, zero non-core deps): consumes formalization contract verbatim, executes PC01–PC14 (identity chain, approval gate, variable/formula completeness, condition consistency, ambiguity gate incl. resolved_assumed must_not, edge-case coverage, MTF/repaint/required-data, contradictions, traceability, duplicate ids), deterministic verification_id, --gate-check ordering gate"
+  - "[pre-verification-stage] Pre-Verification selftest green: 36/36 assertions (TEST-PRE-001..020); live Phase-5 contract passes end to end and --gate-check approves"
+  - "[pre-verification-stage] Regressions after Phase 6: router.pl selftest 80/80 + scenarios 57/57, formalize.pl selftest 106/106 — Router, Skills, Registry, config/ untouched; no Pine code in any Phase-6 artifact"
+  - "[feasibility-stage] meta/feasibility_procedure.md created (narrative authority: 12 mechanical checks FB01–FB12, evidence-bounded capability KB, no-silent-fallback policy, advisory limits, severity taxonomy, canonical feasibility_id body, gate semantics)"
+  - "[feasibility-stage] feasibility/contract_schema.yaml upgraded to v1.1 (additive: blocked/warned/unknown/partial output sections + v1.0 affirmation mapping; v1.0 fields preserved — backward compatible)"
+  - "[feasibility-stage] config/feasibility.yaml extended (capability_kb 19 evidence-based entries, data_kinds vocabulary, performance_hints advisory thresholds); existing feasibility: checks untouched"
+  - "[feasibility-stage] feasibility/feasibility.pl implemented (core Perl, zero non-core deps): consumes contract + pre result verbatim, executes FB01–FB12 (identity chain, Phase-6 handoff gate incl. unquoted next_stage, capability scan, runtime model, timeframe/MTF, data availability with 1T-only rule, repaint mirrored verbatim, drawing/alert/session advisory unknowns, performance, per-requirement classification UNKNOWN > NOT_FEASIBLE > PARTIAL > EXACT), deterministic feasibility_id, --gate-check --feasibility ordering gate"
+  - "[feasibility-stage] Feasibility selftest green: 55/55 assertions (TEST-FEAS-001..022)"
+  - "[feasibility-stage] Regressions after Phase 7: router.pl selftest 80/80, formalize.pl selftest 106/106, pre_verify.pl selftest 36/36 — Router, Formalization, Pre-Verification, Skills, Registry, routing.yaml untouched; no Pine code in any Phase-7 artifact"
+  - "[implementation-planning-stage] meta/implementation_planning_procedure.md created (narrative authority: 14 mechanical checks IP01–IP14, deterministic module derivation, dependency graph cycle/missing detection, canonical planning_id body, gate semantics)"
+  - "[implementation-planning-stage] implementation/contract_schema.yaml upgraded to v1.1 (additive: planning contract block documented — identity chain completion, planning_status enum, checks/findings/warnings/decisions[], architecture sections, modules[], dependency_graph, implementation_order, verification_hooks, implementation_allowed, next_stage; all v1.0 fields preserved — backward compatible)"
+  - "[implementation-planning-stage] implementation/implementation_plan.pl implemented (core Perl, zero non-core deps): consumes formalization contract + pre result + feasibility result verbatim, executes IP01–IP14 (identity chain, hard handoff gate rejecting PARTIALLY_FEASIBLE/NOT_FEASIBLE/BLOCKED/INVALID_INPUT, requirements coverage, architecture, module decomposition, data flow, state, MTF, signal, drawing, alert, performance, dependency graph, verification hooks), deterministic planning_id, --gate-check ordering gate, UTF-8 end to end"
+  - "[implementation-planning-stage] Implementation Planning selftest green: 46/46 assertions (TEST-PLAN-001..027)"
+  - "[implementation-planning-stage] Hard input gate verified: only FEASIBLE / FEASIBLE_WITH_WARNINGS open Implementation Planning; PARTIALLY_FEASIBLE, NOT_FEASIBLE, BLOCKED, INVALID_INPUT, and malformed handoffs all produce planning_status BLOCKED or INVALID_INPUT with next_stage HALT, implementation_allowed false, exit 2"
+  - "[implementation-planning-stage] Downstream gate verified: --gate-check --plan FILE approves READY/READY_WITH_WARNINGS plans (exit 0) and refuses BLOCKED/INVALID_INPUT plans (exit 2)"
+  - "[implementation-planning-stage] Cross-process byte-identical determinism verified (3 fresh processes, identical output, stable planning_id)"
+  - "[implementation-planning-stage] Dependency graph cycle/missing detection verified with synthetic injected graphs (cycle A->B->C->A, self-loop, missing dep B->NONEXISTENT); real mechanically-derived graph is acyclic and fully resolved"
+  - "[implementation-planning-stage] Persian UTF-8 determinism verified: byte-identical output, valid planning_id, no false capability claims"
+  - "[implementation-planning-stage] No-Pine invariant verified: zero Pine constructs (//@version / indicator( / strategy( / library() in any Phase-8 artifact; the only hits are the negative-test assertion strings in the selftest, matching the precedent in formalize.pl/pre_verify.pl/feasibility.pl"
+  - "[implementation-planning-stage] Regressions after Phase 8: router.pl selftest 80/80, router.pl --scenarios 57/57, formalize.pl selftest 106/106, pre_verify.pl selftest 36/36, feasibility.pl selftest 55/55 — Router, Formalization, Pre-Verification, Feasibility, Skills (77/77), Registry, raw Skill sources, routing.yaml, config/ untouched; no Pine code in any Phase-8 artifact"
+  - "[implementation-stage] implementation/implement.pl implemented (core Perl, zero non-core deps): consumes the authoritative Phase-8 plan verbatim, executes the Stage 02–10 gates (input/gate validation, plan validation incl. dependency-cycle DFS and order coherence, module implementation strictly per plan order, integration, honest compile validation UNKNOWN_REQUIRES_EXTERNAL_VALIDATION, static checks, traceability, determinism), deterministic content-addressed implementation_id, result contract v1.1"
+  - "[implementation-stage] Implementation selftest green: 10/10 assertions (TEST-IMPL-001..008), incl. honest compile status and no-Pine result invariant"
+  - "[implementation-stage] Live end-to-end: authoritative Phase-8 plan (READY, implementation_allowed true) → COMPLETED with zero findings/warnings/blockers, next_stage POST_VERIFICATION; generated Pine (phase9_pine.pine): //@version=6 first line, modules M-STATE/M-SIGNAL/M-INTEG in plan order, condition C-1 and edge cases E-NA/E-FIRST honored verbatim"
+  - "[implementation-stage] Determinism verified: byte-identical result + Pine across 3 fresh processes; implementation_id impl-31ffd64d8c54 content-addresses identity chain + source sha256 + implementation order"
+  - "[implementation-stage] Phase-9 engine defects fixed (static-check regex interpolation; plan-list parsing truncation); stale replica output replaced by authoritative engine output; generated executable content byte-identical to the preserved artifact — no plan semantics touched"
+  - "[implementation-stage] Regressions after Phase 9: router.pl selftest 80/80, router.pl --scenarios 57/57, formalize.pl selftest 106/106, pre_verify.pl selftest 36/36, feasibility.pl selftest 55/55, implementation_plan.pl selftest 46/46 — Router, Formalization, Pre-Verification, Feasibility, Implementation Planning, Skills (77/77), Registry, raw Skill sources, config/ untouched"
+
+change_history:
+  - version: "0.1.0"
+    date: "2026-09-09"
+    change: "Initial architecture scaffold"
+  - version: "0.9.0"
+    date: "2026-09"
+    change: "Import Mode complete: 77/77 Skills normalized and registered (batch-001..008); see CHANGELOG.md and skills/import-reports/final-import-report.md"
+  - version: "1.0.0"
+    date: "2026-09"
+    change: "PHASE 3 Router Design complete: meta/skill_router.md v2.0.0 + config/routing.yaml five-layer v2 + 6 routing test specs (design only, no executable logic)"
+  - version: "1.1.0"
+    date: "2026-09"
+    change: "PHASE 4 Router Implementation complete: skills/agent/router.pl executes the routing/2 spec against the 77-skill registry (classification, matching, minimal set, dependency closure, redundancy, conflicts/ambiguity, trace, status gating; routing/2 + v1 + JSON outputs); selftest 80/80 covering TEST-ROUTING-001..008"
+  - version: "1.2.0"
+    date: "2026-09"
+    change: "Scenario fixture layer added: 10 concrete registry-backed routing scenarios (debug/MTF/multi-domain/redundancy/negative gates) in tests/routing/scenarios/ with a --scenarios runner in router.pl; 57/57 assertions green end to end against the real registry"
+  - version: "1.3.0"
+    date: "2026-09"
+    change: "PHASE 5 Formalization Layer complete: meta/formalization_procedure.md + formalization/contract_schema.yaml v1.1 + formalization/formalize.pl (handoff gate, mechanical verbatim extraction, repaint classification, B-PINE gate, resolved_by_user-only ambiguity gate, content-addressed identity, --gate-check); selftest 106/106 (TEST-FORMAL-001..013); router regression 80/80 + 57/57"
+  - version: "1.4.0"
+    date: "2026-09-09"
+    change: "PHASE 6 Pre-Verification Layer complete: meta/pre_verification_procedure.md + verification/pre_contract_schema.yaml v1.1 + verification/pre_verify.pl (14 mechanical checks PC01–PC14, resolved_assumed must_not, deterministic pre-verification_id, --gate-check); selftest 36/36 (TEST-PRE-001..020); live Phase-5 contract PASS end to end; regressions: router 80/80 + 57/57, formalization 106/106"
+  - version: "1.5.0"
+    date: "2026-09"
+    change: "PHASE 7 Feasibility Layer complete: meta/feasibility_procedure.md + feasibility/contract_schema.yaml v1.1 + config/feasibility.yaml capability_kb/data_kinds/performance_hints + feasibility/feasibility.pl (12 mechanical checks FB01–FB12, evidence-bounded capability KB, no-silent-fallback, per-requirement classification, deterministic feasibility_id, --gate-check); selftest 55/55 (TEST-FEAS-001..022); regressions: router 80/80, formalization 106/106, pre-verification 36/36"
+  - version: "1.6.0"
+    date: "2026-09"
+    change: "PHASE 8 Implementation Planning Layer complete: meta/implementation_planning_procedure.md + implementation/contract_schema.yaml v1.1 + implementation/implementation_plan.pl (14 mechanical checks IP01–IP14, hard handoff gate rejecting PARTIALLY_FEASIBLE/NOT_FEASIBLE/BLOCKED/INVALID_INPUT, deterministic module derivation, dependency graph cycle/missing detection, canonical planning_id, --gate-check); selftest 46/46 (TEST-PLAN-001..027); regressions: router 80/80 + 57/57, formalization 106/106, pre-verification 36/36, feasibility 55/55"
+  - version: "1.7.0"
+    date: "2026-09-10"
+    change: "PHASE 9 Implementation Layer complete: implementation/implement.pl (Stage 02–10 gates, faithful plan-list parsing, honest compile status UNKNOWN_REQUIRES_EXTERNAL_VALIDATION, deterministic content-addressed implementation_id, result contract v1.1); selftest 10/10 (TEST-IMPL-001..008); authoritative Phase-8 plan → COMPLETED end to end with zero blockers; generated Pine byte-stable across processes; regressions: router 80/80 + 57/57, formalization 106/106, pre-verification 36/36, feasibility 55/55, planning 46/46"

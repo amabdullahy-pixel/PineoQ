@@ -1,0 +1,27 @@
+# TEST SPEC — Router: statuses gate the Formalization handoff (case 7)
+spec_id: TEST-ROUTING-007
+category: routing
+status: specified
+requirement: "Only routing_status=ready proceeds to Formalization; ambiguous, insufficient_coverage, blocked, and conflict_detected all stop before Formalization with itemized reasons."
+
+preconditions:
+  - "Registry populated."
+  - "Fixtures: (a) clear request covering registered capabilities → expect ready; (b) request with an unresolved ambiguity (e.g., 'RSI1 > RSI3' without length/TF/symbol declaration) → expect ambiguous; (c) request requiring a capability with no Registry provider → expect insufficient_coverage; (d) empty-registry or no-match state → expect blocked; (e) synthetic selection with contradictory confirmation semantics (close-confirmed vs intrabar for the same signal) → expect conflict_detected."
+
+steps:
+  - "Run the Router on each fixture."
+  - "For each result, inspect routing_status, conflicts, ambiguity, coverage.missing_capabilities, and downstream.allowed."
+  - "Attempt the Formalization handoff for each result."
+
+expected:
+  - "Fixture (a): routing_status == ready; downstream.allowed == true; next_stage == FORMALIZATION; handoff permitted."
+  - "Fixture (b): routing_status == ambiguous; missing information itemized in routing.ambiguity; downstream.allowed == false; NO formalization contract created."
+  - "Fixture (c): routing_status == insufficient_coverage; the absent capability named; a skill-creation PROPOSAL may be recorded (never created); handoff refused."
+  - "Fixture (d): routing_status == blocked; controlled-failure reason recorded; handoff refused."
+  - "Fixture (e): routing_status == conflict_detected; each conflict itemized in routing.conflicts — the Router does NOT resolve them; handoff refused."
+  - "In every non-ready case the pipeline stops before Formalization and the user is informed of the exact blocker."
+
+must_not:
+  - "Non-ready statuses must NOT be coerced to ready by broadening the request interpretation."
+  - "The Router must NOT resolve conflicts silently or guess under ambiguity."
+  - "The Router must NOT execute Formalization, Pre-Verification, Feasibility, or Implementation itself."

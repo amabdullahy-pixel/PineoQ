@@ -1,0 +1,91 @@
+# ============================================================================
+# TOKEN / CONTEXT POLICY — Pine Agent
+# ============================================================================
+# Governs what enters the context, in what order, and what may be dropped
+# under pressure. See meta/context_loading_policy.md for narrative policy.
+# ============================================================================
+
+token_policy:
+  status: enabled
+  objective: >
+    Minimize context size while preserving the rules and constraints needed
+    for correct, gated pipeline execution. Precision over coverage: a small
+    relevant context beats a large complete one.
+
+  # --- Load order (mandatory sequence) ---------------------------------------
+  load_order:
+    - id: manifest
+      source: PROJECT_MANIFEST.yaml
+      priority: P0
+      note: "loaded first; establishes status and global gates"
+    - id: registry
+      source: skills/registry.yaml
+      priority: P0
+      note: "loaded second; index only — metadata, not Skill bodies"
+    - id: selected_skills
+      source: skills/normalized/<selected by Router>
+      priority: P1
+      note: "ONLY Router-selected Skills; never the full catalog"
+    - id: mandatory_dependencies
+      source: skills/normalized/<deps of selected Skills>
+      priority: P1
+      note: "mandatory deps only; optional deps must earn selection via triggers"
+
+  # --- Priority levels (used for compression decisions) ----------------------
+  priorities:
+    P0:
+      description: "core rules, contracts, gates — NEVER removed or summarized"
+      examples: [AGENT_RULES.md, active contract schemas, stage gates]
+      removable: false
+    P1:
+      description: "selected Skills and mandatory dependencies"
+      removable: false            # while their stage is active
+      compressible: summarize_after_stage_completes
+    P2:
+      description: "supporting docs (README narrative, meta docs beyond policy sections)"
+      removable: true
+      compressible: summarize
+    P3:
+      description: "historical changelog detail, past-stage contracts, archived conversation context"
+      removable: true
+      compressible: drop_or_pointer   # replace with a pointer/reference, not full text
+
+  # --- Dependency limits -------------------------------------------------------
+  dependency_limits:
+    max_selected_skills: 5             # mirrors config/routing.yaml
+    max_dependency_depth: 3
+    max_total_context_share_for_skills: "60%"   # skills may not crowd out rules/contracts
+    optional_dependency_rule: "never loaded unless independently trigger-matched"
+
+  # --- Duplicate context prevention -------------------------------------------
+  deduplication:
+    single_source_rule: "each rule/definition loaded from exactly one authoritative file"
+    authority_map:
+      agent_rules: AGENT_RULES.md      # never re-inline rules into Skills
+      pipeline: README.md
+      state_snapshot: PROJECT_MANIFEST.yaml
+      routing_policy: config/routing.yaml
+      feasibility_policy: config/feasibility.yaml
+      verification_policy: config/verification.yaml
+    no_inline_copies: "Skills reference rules by pointer; copying rule text into multiple files is forbidden"
+
+  # --- Behavior at maximum context ---------------------------------------------
+  max_context_behavior:
+    order_of_reduction:                # applied top-down until under budget
+      - "drop P3 (pointers only)"
+      - "summarize P2"
+      - "summarize completed-stage P1 Skills (keep their contract outputs)"
+      - "NEVER reduce P0"
+    before_compression: "update Project Memory with current stage, contract ids, and next action (crash-safe resume)"
+    never_silent: "compression events are recorded (what was dropped/summarized)"
+
+  # --- NEVER removed during compression ----------------------------------------
+  invariants_never_removed:
+    - "AGENT_RULES.md pipeline gating (no code before Formalization; blocker gates)"
+    - "Pine v6 compatibility policy"
+    - "Ambiguity and assumption tracking requirements"
+    - "Separation of Pre-Verification and Post-Verification"
+    - "Minimum-required Skill loading policy"
+    - "Honest validation labeling (ACTUALLY VERIFIED vs STATICALLY REVIEWED)"
+    - "Active stage contracts and their blockers/ambiguities"
+    - "Project Memory resume pointer (current stage, next action)"

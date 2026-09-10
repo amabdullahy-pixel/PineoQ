@@ -1,0 +1,94 @@
+# ============================================================================
+# CONTRACT SCHEMA — PRE-Implementation Verification
+# ============================================================================
+# Specification only. Runs BEFORE any code exists (after Formalization,
+# before Feasibility — see pipeline order in README.md).
+# Checks INTENT. Separate from Post-Verification; never merged.
+#
+# v1.1 (Phase 6 — additive; NO gate redesign, NO status-enum change):
+#   + approved_routing_id, verification_id — identity chain completion
+#     (mirrors formalization v1.1; verification_id = "pre-" + 12 hex of
+#     sha256, deterministic — see meta/pre_verification_procedure.md)
+#   + result: PASS | PASS_WITH_WARNINGS | BLOCKED | INVALID_INPUT — the
+#     machine result vocabulary mandated for Phase 6. `status` KEEPS the
+#     v1.0 enum (passed|failed|blocked|pending|in_progress); mapping:
+#     PASS/PASS_WITH_WARNINGS -> passed, BLOCKED/INVALID_INPUT -> blocked.
+#   + checks[] / findings[] / warnings[] / unresolved_items[] /
+#     traceability / feasibility_allowed / next_stage — Phase-6 fields.
+#   + engine: verification/pre_verify.pl (core Perl, no CPAN).
+#   feasibility_passed / required_data_confirmed remain SPEC-ONLY fields:
+#   Pre-Verification never performs Feasibility (Phase 7 owns it); the
+#   engine leaves feasibility_passed false and reports feasibility_allowed
+#   (permission to START Phase 7), never feasibility_passed.
+# ============================================================================
+
+schema_version: "1.1"
+stage: pre_verification
+predecessor: formalization
+successor: feasibility
+
+pre_verification:
+  # --- Identity -----------------------------------------------------------------
+  request_id: null
+  approved_routing_id: null        # mirrored from the formalization contract
+  formalization_id: null           # contract under verification
+  verification_id: null            # "pre-" + 12 hex of sha256 (deterministic)
+
+  # --- Core checks (false until affirmatively verified) ----------------------------
+  logic_valid: false               # boolean conditions consistent; directions coherent;
+                                   # veto/filter composition correct
+  math_valid: false                # formulas sound; units/scales consistent; no undefined ops
+  variables_defined: false         # every referenced variable/formula/condition defined
+  assumptions_documented: false    # all assumptions recorded with ids
+  ambiguities_resolved_or_recorded: false  # every ambiguity has id + resolution_status;
+                                   # behavior-affecting unresolved => implementation_allowed stays false
+  edge_cases_checked: false        # first bars, insufficient history, zero-range bars,
+                                   # missing volume/data, session gaps, na propagation
+  feasibility_passed: false        # true only when the feasibility contract has
+                                   # status=passed and blockers=[]
+
+  # --- Data & risk coverage -----------------------------------------------------------
+  required_data_confirmed: false   # every required_data entry obtainable at stated timeframes
+  assumptions: []                  # [{ id, statement, affects_behavior, user_confirmed }] (mirrored)
+  ambiguities: []                  # [{ id, description, resolution_status }] (mirrored from formalization)
+  edge_cases: []                   # [{ id, case, required_behavior }] (mirrored/extended)
+
+  # --- MTF & repainting -------------------------------------------------------------------
+  mtf:
+    applicable: false              # from formalization.mtf
+    htf_policy: null               # request strategy + offset/lookahead discipline
+    tf_unit_consistency: null      # minutes-vs-bars semantics verified
+    validated: false
+  repaint_risk:
+    classification: null           # none | low | medium | high
+    mechanism: null                # named mechanism (security lookahead, unconfirmed HTF, intrabar pivots...)
+    user_accepted: null            # required true when classification == high
+
+  # --- Findings & status ------------------------------------------------------------------------
+  checks: []                       # [{ check_id, domain, verdict: pass|fail|warn, findings: [ids] }]
+                                   # 14 fixed checks PC01..PC14 (fixed order — deterministic)
+  findings: []                     # [{ id, check_id, severity: blocker|warning|info,
+                                   #    message, refs: [contract element ids] }] — every finding
+                                   #    traces to formalization elements via refs
+  blockers: []                     # [{ id, check_id, reason }] — ANY entry halts pipeline
+  warnings: []                     # non-blocking findings
+  unresolved_items: []             # ids of ambiguities/edge-cases still open (mirrored)
+  traceability:                    # upstream linkage (all mirrored verbatim)
+    source_skills: []
+    verification_requirements: []
+    implementation_constraints: []
+  result: null                     # PASS | PASS_WITH_WARNINGS | BLOCKED | INVALID_INPUT
+  status: pending                  # pending | in_progress | passed | failed | blocked (v1.0 enum kept)
+  feasibility_allowed: false       # true iff result in {PASS, PASS_WITH_WARNINGS} —
+                                   # permission to START Phase 7 (NOT feasibility_passed)
+  next_stage: null                 # FEASIBILITY | HALT
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "Pre-Verification is a SEPARATE stage from Post-Verification; reports never merge."
+  - "Any blockers entry => status: failed => NO implementation and Feasibility gate fails."
+  - "All core checks must be affirmatively true (not assumed) for status=passed."
+  - "mtf.applicable=true requires mtf.validated=true before pass."
+  - "repaint_risk.classification=high requires explicit user acceptance (user_accepted=true)."

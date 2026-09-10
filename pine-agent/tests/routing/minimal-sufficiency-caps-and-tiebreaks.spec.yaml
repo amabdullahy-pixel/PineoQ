@@ -1,0 +1,29 @@
+# TEST SPEC — Router: minimal sufficiency, hard caps, deterministic tie-breaks (case 5)
+spec_id: TEST-ROUTING-005
+category: routing
+status: specified
+requirement: "The Router selects the smallest sufficient set (never skills that are merely related), enforces max_selected_skills, and breaks ties in the fully ordered, deterministic sequence."
+
+preconditions:
+  - "Registry populated."
+  - "Fixture A: request 'Build a volume-profile indicator' — technical-analysis-core and volume-analysis both relate; only the capability provider is required."
+  - "Fixture B: synthetic candidate set where 6 skills all achieve grade match (registry revision extended for the test)."
+  - "Fixture C: two candidates with equal priority and equal domain breadth but different dependency counts."
+
+steps:
+  - "Fixture A: run the Router; inspect selected_skills for related-but-unneeded skills."
+  - "Fixture B: run the Router; count selected_skills."
+  - "Fixture C: run the Router; inspect the tie-break outcome."
+  - "Re-run each fixture to confirm determinism."
+
+expected:
+  - "Fixture A: skills whose capabilities are not required for coverage stay unloaded (no loading because related; no entire domains)."
+  - "Fixture B: selected_skills count ≤ config max_selected_skills (5); if coverage needs more, routing_status is insufficient_coverage or the trace justifies an XL reduction — never a silent cap violation."
+  - "Fixture C: tie-break resolves in order highest_priority → narrowest_domain_match → lowest_dependency_count → registry_id lexicographic; the loser appears in excluded_skills."
+  - "Minimization holds: skill_count, dependency_count, context_size, capability_overlap are each minimal subject to complete coverage + closure."
+  - "estimated_context_size uses the S/M/L/XL levels; any XL carries a written justification in routing_trace."
+
+must_not:
+  - "The Router must NOT load optional dependencies that were not independently trigger-matched."
+  - "The Router must NOT substitute a similar skill for the selected one (no silent substitution)."
+  - "Tie-breaking must NOT depend on iteration order, session state, or time."

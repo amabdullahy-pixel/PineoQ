@@ -1,0 +1,29 @@
+# TEST SPEC — Contracts: verification stages are separate (case 7)
+spec_id: TEST-CONTRACTS-002
+category: contracts
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  Pre-Implementation Verification and Post-Implementation Verification must be
+  separate stages with separate contracts, run at different pipeline positions,
+  and never merged into one report.
+
+preconditions:
+  - "Scaffold present: verification/pre_contract_schema.yaml and
+      verification/post_contract_schema.yaml exist as distinct files."
+  - "config/verification.yaml declares stages_are_separate: true."
+
+structural_checks:            # verifiable today against the scaffold
+  - "pre_contract_schema.yaml and post_contract_schema.yaml are two distinct files with distinct top-level keys (pre_verification / post_verification)."
+  - "Their field sets differ: pre checks intent (logic/math/variables/data/assumptions/ambiguities/edge cases/feasibility/mtf/repaint); post checks artifact (syntax/types/scope/runtime/signal_equivalence/repaint/mtf/performance/budgets/alerts)."
+  - "Pipeline order in PROJECT_MANIFEST.yaml lists pre_verification and post_verification as two separate stages."
+  - "templates/verification-report-template.yaml requires exactly ONE stage section per report."
+
+behavioral_checks:            # verifiable when the pipeline executes
+  - "Pre runs before any code exists: if invoked post-implementation only, it is rejected as out-of-order."
+  - "Post runs only on an implementation output; if no implementation contract exists, post fails with a blocker, not an empty pass."
+  - "A merged report (both stage sections filled) is invalid and must be rejected by any consuming stage."
+  - "Pre failure blocks Feasibility/Implementation; post failure routes to rollback_to_implementation — distinct outcomes, never conflated."
+
+must_not:
+  - "No stage may collapse pre+post into a single 'verification' pass."
+  - "Post-Verification must NOT inherit pre-verification verdicts (e.g., syntax claims) without re-checking."

@@ -1,0 +1,26 @@
+# TEST SPEC — Router: trigger fidelity — weak_match never selected alone (case 4)
+spec_id: TEST-ROUTING-004
+category: routing
+status: specified
+requirement: "Only skills with match/partial_match grades may be selected; a domain-only (weak_match) or unrelated skill must remain excluded, and triggers must be used exactly as registered."
+
+preconditions:
+  - "Registry populated; the request's topic domain overlaps a skill whose REGISTERED TRIGGERS do not match the request."
+  - "Example fixture: request 'What does the volume percentile mean in my script?' — volume-analysis shares the volume domain but its registered triggers (OBV VWAP, relative volume RVOL, …) do not match a definitional question."
+
+steps:
+  - "Run the Router on the request."
+  - "Inspect matching grades in routing_trace.matching for all candidates."
+  - "Inspect selected_skills and excluded_skills."
+
+expected:
+  - "volume-analysis receives grade weak_match (domain alignment, no trigger match) and appears in excluded_skills, not selected_skills."
+  - "No skill with grade weak_match or no_match appears in selected_skills or dependency_skills."
+  - "Grades used are exactly: match | partial_match | weak_match | no_match."
+  - "Persian-language requests match against registered Persian triggers with the same force as English."
+  - "If no skill achieves match/partial_match: routing_status == blocked (v0.1 no-match behavior preserved), unmatched terms recorded via coverage.missing_capabilities + routing_trace.matching."
+
+must_not:
+  - "The Router must NOT select a skill because its domain or name looks related."
+  - "Triggers must NOT be broadened, fuzzed, or synthesized (config: fuzzy_matching: false)."
+  - "The Router must NOT load an entire domain or category to compensate for a missing trigger match."

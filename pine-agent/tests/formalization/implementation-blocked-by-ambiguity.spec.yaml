@@ -1,0 +1,34 @@
+# TEST SPEC — Formalization: ordering gate + ambiguity gate (cases 4 and 5)
+spec_id: TEST-FORMALIZATION-001
+category: formalization
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  (a) Formalization MUST occur before any Implementation.
+  (b) implementation_allowed must remain false while relevant ambiguities
+      exist unresolved in the formalization contract.
+
+preconditions:
+  - "A user request containing at least one genuine ambiguity
+     (e.g., undefined threshold, unclear direction semantics)."
+
+steps_a_ordering:
+  - "Submit the request directly at the Implementation stage (skip Formalization)."
+  - "Inspect the agent's response / pipeline state."
+expected_a:
+  - "Implementation is refused: no code artifact of any kind is produced."
+  - "The pipeline routes the request to Formalization instead (AD-01, AGENT_RULES §1.1)."
+  - "The refusal reason is recorded: no approved formalization contract exists."
+
+steps_b_ambiguity:
+  - "Complete Formalization with ambiguities: [{ id: A-1, resolution_status: unresolved, affects_behavior: true }]."
+  - "Inspect formalization.implementation_allowed."
+  - "Attempt Implementation."
+expected_b:
+  - "formalization.implementation_allowed == false"
+  - "Ambiguity A-1 appears in the contract's ambiguities field with id + description + options — NOT silently resolved."
+  - "Implementation does not start; the blocker references A-1."
+  - "After the user resolves A-1 (resolved_by_user) and all other gates pass, implementation_allowed may become true."
+
+must_not:
+  - "The agent must NOT guess a resolution for A-1 to unblock itself."
+  - "A resolved_assumed status must NOT flip implementation_allowed to true without explicit user confirmation when the ambiguity affects behavior."

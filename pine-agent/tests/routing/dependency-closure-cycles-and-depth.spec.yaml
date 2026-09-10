@@ -1,0 +1,29 @@
+# TEST SPEC — Router: dependency closure, cycles, missing deps, depth cap (case 6)
+spec_id: TEST-ROUTING-006
+category: routing
+status: specified
+requirement: "Every selected skill's mandatory dependencies resolve recursively to closure; circular, missing, or over-deep dependency chains produce routing_status=blocked with a recorded reason."
+
+preconditions:
+  - "Registry populated (current 77-Skill registry: NO mandatory dependencies — all cross-references optional; closure therefore adds nothing, which this test must confirm)."
+  - "Fixtures use a test-only registry revision with synthetic mandatory edges: (a) A→B→C chain; (b) X→Y→X cycle; (c) S→missing_id; (d) chain deeper than max_dependency_depth (3)."
+
+steps:
+  - "Fixture (a): select A; walk the resolution."
+  - "Fixture (b): select X; walk the resolution."
+  - "Fixture (c): select S; walk the resolution."
+  - "Fixture (d): select the deep-chain root; walk the resolution."
+  - "Re-run against the REAL registry: select any skill; inspect dependency_skills."
+
+expected:
+  - "Fixture (a): dependency_skills == [{id: B, required_by: A}, {id: C, required_by: B}] — provenance preserved per dependency."
+  - "Fixture (b): routing_status == blocked; the cycle path (X→Y→X) recorded in routing_trace.dependency_resolution."
+  - "Fixture (c): routing_status == blocked; the missing id named."
+  - "Fixture (d): routing_status == blocked; depth-exceeded reason recorded."
+  - "Real registry: dependency_skills == [] for every selection (no mandatory edges exist) and routing proceeds normally — confirming the registry_note in config/routing.yaml dependency_rules."
+  - "In all passing cases, dependency closure is complete before redundancy analysis runs."
+
+must_not:
+  - "The Router must NOT ignore unresolved dependencies or proceed with a partial closure."
+  - "Optional dependencies must NOT be auto-resolved (they enter only via independent trigger match, as selected skills)."
+  - "A blocked dependency state must NOT set downstream.allowed=true."

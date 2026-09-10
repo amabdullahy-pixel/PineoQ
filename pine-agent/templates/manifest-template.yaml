@@ -1,0 +1,71 @@
+# ============================================================================
+# TEMPLATE — Project Manifest
+# ============================================================================
+# Reusable template for future project manifests (per Pine project or workspace).
+# Copy, replace <placeholders>, delete guidance comments. Keep YAML valid.
+# The live manifest for the agent itself is pine-agent/PROJECT_MANIFEST.yaml.
+# ============================================================================
+
+project:
+  name: <project-name>
+  version: "<semver>"                  # e.g. "0.1.0"
+  status: <architecture-stage | import-stage | implementation-stage | release>
+  objective: >
+    <One paragraph: what this project builds for the user.>
+
+pine:
+  version: "6"                         # always "6"; no legacy targets
+  compatibility_policy: >
+    <Policy sentence(s): v6-only, version directive requirements.>
+
+pipeline:
+  order:                               # fixed stage order — do not reorder
+    - request
+    - skill_routing
+    - formalization
+    - pre_verification
+    - feasibility
+    - implementation_planning
+    - implementation
+    - post_verification
+  stage_gates:                         # per-stage gate summary
+    formalization: <gate description>
+    pre_verification: <gate description>
+    feasibility: <gate description>
+    implementation: <gate description>
+    post_verification: <gate description>
+
+constraints:
+  - "<Binding constraint 1>"
+  - "<Binding constraint 2>"
+
+skills:
+  imported: <int>                      # count of Skills imported for this project
+  normalized: <int>                    # count of normalized Skills available
+  registry_state: <empty | populated>
+  directories:                         # audit of skills/ subdirectories
+    incoming: <empty | count>
+    normalized: <empty | count>
+    archived: <empty | count>
+    rejected: <empty | count>
+    review-needed: <empty | count>
+
+implementation_allowed: <true|false>   # global gate, mirrors active contracts
+
+architectural_decisions:
+  - id: <AD-XX>
+    decision: "<one-line decision>"
+    rationale: "<why>"
+
+known_bugs:
+  - id: <BUG-XX>                       # empty list ([]) when none
+    symptom: "<observed behavior>"
+    status: <open | investigating | fixed>
+
+validation_results:
+  - "<check performed and outcome>"
+
+change_history:
+  - version: "<semver>"
+    date: "<YYYY-MM-DD>"
+    change: "<one-line summary>"

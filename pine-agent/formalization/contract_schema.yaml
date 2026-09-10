@@ -1,0 +1,93 @@
+# ============================================================================
+# CONTRACT SCHEMA — Formalization stage
+# ============================================================================
+# Specification only — no executable logic. The Formalization stage converts
+# the user request into this contract BEFORE any code generation may occur.
+# Filled contracts are stored per request (contracts/<request_id>/formalization.yaml).
+#
+# v1.1 (Phase 5 — additive contract completion; NO gate redesign):
+#   + formalization_id, supersedes — identity chain (consumed by the pre,
+#     feasibility, and implementation schemas but previously undefined here)
+#   + affects_behavior on ambiguities entries — required by
+#     TEST-FORMALIZATION-001 and AGENT_RULES §2.8; mirrors the assumptions
+#     entry convention
+#   + source_skills, verification_requirements, implementation_constraints —
+#     traceability and downstream-required information
+#   + implementation_allowed comment aligned with TEST-FORMALIZATION-001
+#     must_not: behavior-affecting ambiguities require resolved_by_user
+#   Status enum UNCHANGED (pending | in_progress | completed | blocked).
+#   Approval is expressed SOLELY by implementation_allowed: true — no parallel
+#   'approved' status value is introduced (single source of truth for the gate;
+#   downstream contracts define approval exactly this way).
+# ============================================================================
+
+schema_version: "1.1"
+stage: formalization
+predecessor: skill_routing
+successor: pre_verification
+
+formalization:
+  # --- Identity -----------------------------------------------------------------
+  request_id: null                 # unique id linking all stage contracts of one request
+  approved_routing_id: null        # routing contract (routing_status: ready) that authorized this stage
+  formalization_id: null           # deterministic content-addressed id of THIS contract:
+                                   # "form-" + 12 hex chars of sha256 — see
+                                   # meta/formalization_procedure.md (§Identity).
+                                   # Consumed as formalization_id by the pre-verification and
+                                   # feasibility contracts and as approved_formalization_id by
+                                   # the implementation contract (when implementation_allowed=true).
+  supersedes: null                 # formalization_id of the previous revision, when a contract
+                                   # is revised after approval; approved contracts are immutable —
+                                   # a revision gets a NEW formalization_id pointing back
+
+  # --- Request normalization ------------------------------------------------------
+  natural_language_request: null   # the user request, verbatim
+  normalized_request: null         # precise restatement: what indicator/behavior is requested
+
+  # --- Extracted specification ------------------------------------------------------
+  variables: []                    # [{ name, type, description, source }] — series/inputs/constants
+  formulas: []                     # [{ id, expression, description, depends_on }]
+  boolean_conditions: []           # [{ id, condition, meaning, used_by }] — entry/exit/veto logic
+
+  # --- Tracking (first-class; never silently dropped) --------------------------------
+  assumptions: []                  # [{ id, statement, affects_behavior, user_confirmed }]
+  ambiguities: []                  # [{ id, description, options, affects_behavior,
+                                   #    resolution_status: unresolved|resolved_by_user|resolved_assumed }]
+  edge_cases: []                   # [{ id, case, required_behavior }] — first bars, zero-range, gaps, na...
+
+  # --- Timeframe & data -----------------------------------------------------------------
+  timeframe:
+    chart: null                    # intended chart timeframe (or "any")
+    calculation: null              # timeframe(s) used inside calculations when different
+  mtf: false                       # true when multi-timeframe data is required
+  required_data: []                # [{ kind, symbol_hint, timeframe, notes }] — price/volume/OI/funding...
+
+  # --- Risk classification ------------------------------------------------------------
+  repaint_risk: null               # none | low | medium | high (+ mechanism note)
+
+  # --- Traceability & downstream requirements -------------------------------------------
+  source_skills: []                # routed skill ids consulted during extraction
+                                   # (subset of routing selected_skills ∪ dependency_skills)
+  verification_requirements: []    # checks Pre-Verification must perform on this contract
+                                   # (ids mirror verification/pre_contract_schema.yaml)
+  implementation_constraints: []   # binding constraints handed forward to Implementation Planning
+
+  # --- Status & gate ---------------------------------------------------------------------
+  status: pending                  # pending | in_progress | completed | blocked
+  blockers: []                     # [{ id, reason }] — why the stage could not complete
+  implementation_allowed: false    # true ONLY when status=completed AND blockers empty AND
+                                   # every behavior-affecting ambiguity has
+                                   # resolution_status: resolved_by_user (a behavior-affecting
+                                   # ambiguity that is resolved_assumed keeps this false —
+                                   # TEST-FORMALIZATION-001 must_not; AGENT_RULES §2.7/§2.8)
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "Formalization MUST complete before any code generation (AGENT_RULES §1.1)."
+  - "implementation_allowed stays false while any behavior-affecting ambiguity is unresolved."
+  - "A behavior-affecting ambiguity unlocks implementation_allowed ONLY as resolved_by_user; resolved_assumed never unlocks (TEST-FORMALIZATION-001 must_not)."
+  - "Ambiguities are recorded here — never silently resolved by the agent."
+  - "blockers non-empty => status: blocked => pipeline halts before Pre-Verification."
+  - "Downstream stages consume this contract via formalization_id; approval is expressed solely by implementation_allowed: true — no parallel approval status exists."

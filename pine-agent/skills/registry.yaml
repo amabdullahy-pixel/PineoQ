@@ -1,0 +1,1760 @@
+# ============================================================================
+# SKILL REGISTRY — Pine Agent
+# ============================================================================
+# Maintained by Import Mode only — never hand-edited into existence.
+# First populated by import batch-001 (2026-09): 10 Skills normalized.
+#
+# Entry schema:
+#   id: <kebab-case unique id>
+#   name: <human-readable name>
+#   version: <semver>
+#   path: <skills/normalized/<...>/skill.md>
+#   source_path: <skills/incoming/<original>.md>
+#   layer: <CORE | QUANT | RESEARCH | FORMALIZATION | FEASIBILITY |
+#           IMPLEMENTATION | VERIFICATION | META>
+#   domains: [<domain-id>, ...]
+#   triggers:
+#     english: [...]
+#     persian: [...]
+#   dependencies:
+#     mandatory: [<skill-id>, ...]
+#     optional: [<skill-id>, ...]
+#   status: <normalized | review-needed | rejected>
+#   activation: <eligible | inactive | blocked>
+#   validation_status: <passed | partial | failed>
+#   import_batch: <batch-id>
+#   priority: <1-10>   # 1 = highest
+#
+# Routing rules (config/routing.yaml):
+#   - only status:normalized + activation:eligible entries under
+#     skills/normalized/ are discoverable
+#   - review-needed/ rejected/ entries are never eligible
+#   - dependency ids must exist in this registry
+#
+# PENDING OPTIONAL DEPENDENCIES (batch-001 convention):
+#   Some entries list optional dependency ids for skills not yet imported.
+#   As of batch-008 the 77-skill library is COMPLETE: every dependency id
+#   referenced below resolves to a registered entry. The convention remains
+#   in force for future library growth (new ids = new incoming files). These ids are the deterministic ids of pending incoming files,
+#   explicitly documented in each skill's Import Report and parked in
+#   skills/import-reports/processing-index.yaml (duplicate_candidates,
+#   resolved: false). They are NOT invented. Router behavior: a missing
+#   optional dependency is a no-op. Import Mode resolves these references
+#   when the target skill is imported in a later batch.
+# ============================================================================
+
+skills:
+  - id: pine-language-core
+    name: Pine Language Core
+    version: "1.0.0"
+    path: skills/normalized/core/pine-language-core/skill.md
+    source_path: skills/incoming/01-pine-language-core.md
+    layer: CORE
+    domains: [pine-syntax]
+    triggers:
+      english: [pine syntax, variable declaration, reassignment operator,
+        var vs varip, lazy and or short circuit, history-reference operator,
+        user-defined function, method overloading, local scope rules,
+        switch default branch, loop timeout]
+      persian: [سینتکس پایین اسکریپت, تعریف متغیر, تفاوت var و varip,
+        ارجاع به تاریخچه, تابع کاربر, متد, محدوده محلی, حلقه و مدت اجرا]
+    dependencies:
+      mandatory: []
+      optional: [pine-type-system, pine-data-structures, pine-functions-libraries, pine-v6]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: pine-type-system
+    name: Pine Type System
+    version: "1.0.0"
+    path: skills/normalized/core/pine-type-system/skill.md
+    source_path: skills/incoming/02-pine-type-system.md
+    layer: CORE
+    domains: [pine-syntax, type-safety]
+    triggers:
+      english: [qualifier hierarchy, const input simple series, type casting,
+        bool na, tuple destructuring, type inference, enum,
+        request.security argument qualifier]
+      persian: [سیستم تایپ پایین اسکریپت, کوالایفایر, تبدیل نوع, تاپل, شمارش enum]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, pine-v6, pine-functions-libraries]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: pine-data-structures
+    name: Pine Data Structures
+    version: "1.0.0"
+    path: skills/normalized/core/pine-data-structures/skill.md
+    source_path: skills/incoming/03-pine-data-structures.md
+    layer: CORE
+    domains: [pine-syntax, state-management]
+    triggers:
+      english: [array, matrix, map, user-defined type, UDT, object reference vs copy,
+        shallow copy, persistent buffer, negative indices, state persistence across bars]
+      persian: [آرایه, ماتریس, نگاشت map, نوع کاربر UDT, کپی و مرجع,
+        نگهداری وضعیت بین کندل‌ها]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, pine-type-system, pine-performance-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: pine-functions-libraries
+    name: Pine Functions & Libraries
+    version: "1.0.0"
+    path: skills/normalized/core/pine-functions-libraries/skill.md
+    source_path: skills/incoming/04-pine-functions-libraries.md
+    layer: CORE
+    domains: [pine-syntax, libraries]
+    triggers:
+      english: [user-defined function, library export, import library version pin,
+        built-in namespaces, method overload, tuple return, conditional call trap,
+        exported function global scope]
+      persian: [تابع کاربر, کتابخانه, ایمپورت کتابخانه, نیم‌اسپیس داخلی, سربارگذاری متد]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, pine-code-architecture, pine-v6]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: pine-v6
+    name: Pine Script v6
+    version: "1.0.0"
+    path: skills/normalized/core/pine-v6/skill.md
+    source_path: skills/incoming/05-pine-v6.md
+    layer: CORE
+    domains: [pine-syntax, version-compatibility]
+    triggers:
+      english: [pine v6, version 6 migration, v5 to v6, dynamic requests,
+        strict booleans, lazy and or, negative array indices, order trimming 9000,
+        timeframe.period 1D, transp removed, when removed]
+      persian: [پایین اسکریپت نسخه ۶, مهاجرت نسخه ۵ به ۶, تغییرات نسخه ششم,
+        درخواست‌های داینامیک]
+    dependencies:
+      mandatory: []
+      optional: [pine-version-intelligence, pine-language-core, pine-type-system]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: pine-version-intelligence
+    name: Pine Version Intelligence
+    version: "1.0.0"
+    path: skills/normalized/meta/pine-version-intelligence/skill.md
+    source_path: skills/incoming/06-pine-version-intelligence.md
+    layer: META
+    domains: [documentation-verification, version-compatibility]
+    triggers:
+      english: [verify pine feature, is this api supported, check release notes,
+        deprecated function, could not find function, documentation check,
+        api existence claim, pine version rumor]
+      persian: [بررسی امکانات پایین اسکریپت, یادداشت‌های انتشار, منسوخ شده,
+        تابع پیدا نشد, تایید مستندات]
+    dependencies:
+      mandatory: []
+      optional: [pine-v6, documentation-verification]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: tradingview-execution-model
+    name: TradingView Execution Model
+    version: "1.0.0"
+    path: skills/normalized/core/tradingview-execution-model/skill.md
+    source_path: skills/incoming/07-tradingview-execution-model.md
+    layer: CORE
+    domains: [execution-model, repainting]
+    triggers:
+      english: [execution model, historical vs realtime, rollback,
+        barstate.isconfirmed, barstate.isnew, varip rollback, intrabar behavior,
+        realtime discrepancy, why realtime differs from history]
+      persian: [مدل اجرا, تاریخی در برابر لحظه‌ای, بازگشت وضعیت rollback,
+        تایید شدن کندل, تفاوت رفتار realtime با تاریخچه]
+    dependencies:
+      mandatory: []
+      optional: [repainting-and-lookahead, strategy-engine, mtf-engineering,
+        pine-language-core]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 1
+
+  - id: indicator-strategy-library-architecture
+    name: Indicator / Strategy / Library Architecture
+    version: "1.0.0"
+    path: skills/normalized/implementation/indicator-strategy-library-architecture/skill.md
+    source_path: skills/incoming/08-indicator-strategy-library-architecture.md
+    layer: IMPLEMENTATION
+    domains: [script-architecture, declaration-parameters]
+    triggers:
+      english: [indicator or strategy or library, script type selection,
+        declaration statement parameters, overlay setting, max_labels_count,
+        max_bars_back, convert indicator to strategy, convert strategy to indicator]
+      persian: [انتخاب نوع اسکریپت, اندیکاتور یا استراتژی یا کتابخانه,
+        پارامترهای اعلان اسکریپت, تبدیل اندیکاتور به استراتژی]
+    dependencies:
+      mandatory: []
+      optional: [pine-functions-libraries, strategy-engine, pine-v6,
+        documentation-verification]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 2
+
+  - id: strategy-engine
+    name: Strategy Engine
+    version: "1.0.0"
+    path: skills/normalized/implementation/strategy-engine/skill.md
+    source_path: skills/incoming/09-strategy-engine.md
+    layer: IMPLEMENTATION
+    domains: [strategies, backtesting]
+    triggers:
+      english: [strategy.entry, strategy.exit, strategy.order, pyramiding,
+        OCA group, process_orders_on_close, calc_on_every_tick, broker emulator,
+        bar magnifier, position sizing, commission slippage margin,
+        strategy.position_avg_price, trade introspection]
+      persian: [موتور استراتژی, ورود و خروج سفارش, پرامیدینگ, سایز پوزیشن,
+        کارمزد و اسلیپیج, شبیه‌ساز بروکر]
+    dependencies:
+      mandatory: []
+      optional: [tradingview-execution-model, indicator-strategy-library-architecture,
+        backtesting-science, trade-management, pine-v6]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 2
+
+  - id: drawing-and-visualization
+    name: Drawing & Visualization
+    version: "1.0.0"
+    path: skills/normalized/implementation/drawing-and-visualization/skill.md
+    source_path: skills/incoming/10-drawing-and-visualization.md
+    layer: IMPLEMENTATION
+    domains: [visualization, performance]
+    triggers:
+      english: [plot vs label, drawing objects, table dashboard, plot counts limit,
+        max_labels_count overflow, polyline, xloc.bar_time,
+        drawing garbage collected, table.cell slow]
+      persian: [رسم و نمایش, جدول داشبورد, محدودیت تعداد پلات, لیبل و خط و باکس]
+    dependencies:
+      mandatory: []
+      optional: [indicator-strategy-library-architecture, pine-performance-engineering,
+        documentation-verification]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-001
+    priority: 2
+
+  - id: alerts-and-webhooks
+    name: Alerts & Webhooks
+    version: "1.0.0"
+    path: skills/normalized/implementation/alerts-and-webhooks/skill.md
+    source_path: skills/incoming/11-alerts-and-webhooks.md
+    layer: IMPLEMENTATION
+    domains: [alerts, integration]
+    triggers:
+      english: [alertcondition vs alert, dynamic alert, alert frequency,
+        webhook payload, duplicate alert prevention, order-fill alert,
+        alert placeholders]
+      persian: [هشدار و وب‌هوک, ارسال سیگنال به ربات, جلوگیری از هشدار تکراری,
+        پیویلود وب‌هوک]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, indicator-strategy-library-architecture,
+        tradingview-execution-model]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: repainting-and-lookahead
+    name: Repainting & Lookahead
+    version: "1.0.0"
+    path: skills/normalized/verification/repainting-and-lookahead/skill.md
+    source_path: skills/incoming/12-repainting-and-lookahead.md
+    layer: VERIFICATION
+    domains: [repainting, data-integrity]
+    triggers:
+      english: [repainting, lookahead, future leak, barmerge.lookahead_on,
+        non-repainting HTF pattern, repaint audit, historical differs from realtime]
+      persian: [ریپینت, نشت اطلاعات آینده, lookahead, ممیزی ریپینت,
+        ناسازگاری تاریخچه با لحظه‌ای]
+    dependencies:
+      mandatory: []
+      optional: [tradingview-execution-model, mtf-engineering, strategy-engine,
+        data-integrity]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 1
+
+  - id: mtf-engineering
+    name: MTF Engineering
+    version: "1.0.0"
+    path: skills/normalized/implementation/mtf-engineering/skill.md
+    source_path: skills/incoming/13-mtf-engineering.md
+    layer: IMPLEMENTATION
+    domains: [mtf, data-acquisition]
+    triggers:
+      english: [request.security, request.security_lower_tf, higher timeframe request,
+        lower timeframe intrabars, HTF confirmation lag, gaps_on gaps_off,
+        dynamic requests, intrabar budget]
+      persian: [دیتای چند تایم‌فریم, تایم‌فریم بالاتر, اینتربار, تاخیر تایید HTF,
+        بودجه اینتربار]
+    dependencies:
+      mandatory: []
+      optional: [repainting-and-lookahead, data-integrity, multi-symbol-engineering,
+        pine-v6]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 1
+
+  - id: data-integrity
+    name: Data Integrity
+    version: "1.0.0"
+    path: skills/normalized/implementation/data-integrity/skill.md
+    source_path: skills/incoming/14-data-integrity.md
+    layer: IMPLEMENTATION
+    domains: [data-integrity, sessions-timezones]
+    triggers:
+      english: [na handling, missing bars gaps, session filter, timezone bug,
+        syminfo.timezone, holiday gaps, illiquid symbols, zero-volume bars, fixnan]
+      persian: [مدیریت مقدار na, کندل‌های غایب و گپ, فیلتر سشن, باگ منطقه زمانی,
+        تعطیلات بازار, کم‌نقدینگی]
+    dependencies:
+      mandatory: []
+      optional: [mtf-engineering, multi-symbol-engineering, repainting-and-lookahead,
+        pine-type-system]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: multi-symbol-engineering
+    name: Multi-Symbol Engineering
+    version: "1.0.0"
+    path: skills/normalized/implementation/multi-symbol-engineering/skill.md
+    source_path: skills/incoming/15-multi-symbol-engineering.md
+    layer: IMPLEMENTATION
+    domains: [multi-symbol, data-acquisition]
+    triggers:
+      english: [request another symbol, benchmark request, relative strength,
+        correlation with index, ticker.new ticker.modify, request.financial,
+        request.economic, request.quandl removed, cross-exchange alignment]
+      persian: [دیتای نماد دیگر, قدرت نسبی, همبستگی با شاخص, فیلتر بین‌بازاری,
+        هم‌ترازی سشن‌ها]
+    dependencies:
+      mandatory: []
+      optional: [mtf-engineering, repainting-and-lookahead, data-integrity, pine-v6]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: mathematical-foundation
+    name: Mathematical Foundation
+    version: "1.0.0"
+    path: skills/normalized/quant/mathematical-foundation/skill.md
+    source_path: skills/incoming/16-mathematical-foundation.md
+    layer: QUANT
+    domains: [mathematics, pine-mapping]
+    triggers:
+      english: [math namespace, float precision, epsilon comparison,
+        operator precedence, rolling vs cumulative sum, log return, degrees radians]
+      persian: [مبانی ریاضی, دقت اعشار, مقایسه اپسیلون, اولویت عملگرها,
+        لگاریتم بازده]
+    dependencies:
+      mandatory: []
+      optional: [numerical-methods, linear-algebra, financial-mathematics,
+        pine-type-system]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 1
+
+  - id: linear-algebra
+    name: Linear Algebra
+    version: "1.0.0"
+    path: skills/normalized/quant/linear-algebra/skill.md
+    source_path: skills/incoming/17-linear-algebra.md
+    layer: QUANT
+    domains: [mathematics, matrices]
+    triggers:
+      english: [covariance matrix, eigenvalues eigenvectors, PCA regime,
+        matrix inverse, pseudo-inverse pinv, matrix multiply, vector dot product,
+        rotation matrix]
+      persian: [جبر خطی, ماتریس کوواریانس, مقدار و بردار ویژه, ضرب ماتریسی]
+    dependencies:
+      mandatory: []
+      optional: [mathematical-foundation, statistics-core, advanced-market-geometry,
+        documentation-verification]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: calculus-and-optimization
+    name: Calculus & Optimization
+    version: "1.0.0"
+    path: skills/normalized/quant/calculus-and-optimization/skill.md
+    source_path: skills/incoming/18-calculus-and-optimization.md
+    layer: QUANT
+    domains: [mathematics, optimization]
+    triggers:
+      english: [discrete derivative, rate of change, second derivative,
+        discrete integral, trapezoidal integration, root finding, bisection,
+        parameter optimization, saturation function]
+      persian: [حسابان گسسته, نرخ تغییر, انتگرال گسسته, یافتن ریشه,
+        بهینه‌سازی پارامتر]
+    dependencies:
+      mandatory: []
+      optional: [mathematical-foundation, numerical-methods,
+        pine-performance-engineering, adaptive-systems]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: analytical-geometry
+    name: Analytical Geometry
+    version: "1.0.0"
+    path: skills/normalized/quant/analytical-geometry/skill.md
+    source_path: skills/incoming/19-analytical-geometry.md
+    layer: QUANT
+    domains: [mathematics, geometry]
+    triggers:
+      english: [trendline math, line.get_price projection, intersection of two lines,
+        slope per bar, chart.point, perpendicular distance, measured move projection,
+        polyline curve]
+      persian: [هندسه تحلیلی, خط روند و شیب, تلاقی دو خط, پیش‌بینی خطی,
+        فاصله عمودی از خط]
+    dependencies:
+      mandatory: []
+      optional: [drawing-and-visualization, linear-algebra, fibonacci-and-harmonic,
+        advanced-market-geometry]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: numerical-methods
+    name: Numerical Methods
+    version: "1.0.0"
+    path: skills/normalized/quant/numerical-methods/skill.md
+    source_path: skills/incoming/20-numerical-methods.md
+    layer: QUANT
+    domains: [mathematics, numerical-stability]
+    triggers:
+      english: [floating point stability, catastrophic cancellation, interpolation,
+        smoothing ladder, newton iteration, fixed point iteration, accumulation error,
+        numerical robustness]
+      persian: [روش‌های عددی, پایداری محاسبات, درون‌یابی, خطای انباشتی]
+    dependencies:
+      mandatory: []
+      optional: [mathematical-foundation, calculus-and-optimization, mtf-engineering,
+        trend-indicators]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-002
+    priority: 2
+
+  - id: statistics-core
+    name: Statistics Core
+    version: "1.0.0"
+    path: skills/normalized/quant/statistics-core/skill.md
+    source_path: skills/incoming/21-statistics-core.md
+    layer: QUANT
+    domains: [statistics, pine-mapping]
+    triggers:
+      english: [descriptive statistics, stdev biased or sample,
+        mean absolute deviation ta.dev, percentile vs percentrank, z-score,
+        MAD robust, IQR outlier fences]
+      persian: [آمار توصیفی, انحراف معیار, صدک و رتبه صدکی, نمره استاندارد z]
+    dependencies:
+      mandatory: []
+      optional: [mathematical-foundation, numerical-methods,
+        statistical-distributions, time-series-analysis]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 1
+
+  - id: probability
+    name: Probability
+    version: "1.0.0"
+    path: skills/normalized/quant/probability/skill.md
+    source_path: skills/incoming/22-probability.md
+    layer: QUANT
+    domains: [statistics, decision-theory]
+    triggers:
+      english: [conditional probability, expected value EV,
+        joint probability independence, Bayes updating, likelihood ratio,
+        base rate, signal confidence]
+      persian: [احتمال شرطی, ارزش مورد انتظار, به‌روزرسانی بیزی, نرخ پایه]
+    dependencies:
+      mandatory: []
+      optional: [statistical-testing, signal-fusion, performance-metrics,
+        statistics-core]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: statistical-distributions
+    name: Statistical Distributions
+    version: "1.0.0"
+    path: skills/normalized/quant/statistical-distributions/skill.md
+    source_path: skills/incoming/23-statistical-distributions.md
+    layer: QUANT
+    domains: [statistics, distribution-modeling]
+    triggers:
+      english: [normal distribution, log-normal, student-t fat tails,
+        skewness kurtosis, normal CDF erf, probit inverse normal, tail risk]
+      persian: [توزیع نرمال, دنباله‌های کلفت, چولگی و کشیدگی, توزیع‌های آماری]
+    dependencies:
+      mandatory: []
+      optional: [statistics-core, monte-carlo-and-resampling, statistical-testing,
+        numerical-methods]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: regression-correlation
+    name: Regression & Correlation
+    version: "1.0.0"
+    path: skills/normalized/quant/regression-correlation/skill.md
+    source_path: skills/incoming/24-regression-correlation.md
+    layer: QUANT
+    domains: [statistics, trend-fitting]
+    triggers:
+      english: [correlation Pearson, covariance, least squares regression,
+        R squared, residuals, autocorrelation, regression channel, linreg offset]
+      persian: [همبستگی, کوواریانس, رگرسیون خطی, خودهمبستگی, کانال رگرسیون]
+    dependencies:
+      mandatory: []
+      optional: [statistics-core, time-series-analysis, statistical-arbitrage,
+        analytical-geometry]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: statistical-testing
+    name: Statistical Testing
+    version: "1.0.0"
+    path: skills/normalized/quant/statistical-testing/skill.md
+    source_path: skills/incoming/25-statistical-testing.md
+    layer: QUANT
+    domains: [statistics, hypothesis-testing]
+    triggers:
+      english: [hypothesis testing, p-value, confidence interval, Wilson interval,
+        t-test of mean, chi-square test, stationarity test, multiple testing,
+        p-hacking]
+      persian: [آزمون فرض, ارزش p, بازه اطمینان, چندآزمونی]
+    dependencies:
+      mandatory: []
+      optional: [statistical-distributions, overfitting-and-robustness,
+        walk-forward-and-validation, probability]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: time-series-analysis
+    name: Time Series Analysis
+    version: "1.0.0"
+    path: skills/normalized/quant/time-series-analysis/skill.md
+    source_path: skills/incoming/26-time-series-analysis.md
+    layer: QUANT
+    domains: [statistics, time-series]
+    triggers:
+      english: [rolling vs expanding statistics, stationarity, variance ratio,
+        seasonality day of week, volatility clustering, EWMA volatility,
+        warm-up period]
+      persian: [تحلیل سری زمانی, ایستایی, فصلی بودن, خوشه‌ای بودن نوسان]
+    dependencies:
+      mandatory: []
+      optional: [regression-correlation, statistical-distributions,
+        volatility-indicators, data-integrity]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: stochastic-processes
+    name: Stochastic Processes
+    version: "1.0.0"
+    path: skills/normalized/quant/stochastic-processes/skill.md
+    source_path: skills/incoming/27-stochastic-processes.md
+    layer: QUANT
+    domains: [statistics, market-modeling]
+    triggers:
+      english: [random walk, GBM simulation, Box-Muller, Markov chain states,
+        martingale, mean reversion OU, half-life of reversion, Hurst exponent]
+      persian: [فرایندهای تصادفی, بازگشت به میانگین, زنجیره مارکوف, توان هورست]
+    dependencies:
+      mandatory: []
+      optional: [monte-carlo-and-resampling, regression-correlation,
+        time-series-analysis, statistical-arbitrage]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: monte-carlo-and-resampling
+    name: Monte Carlo & Resampling
+    version: "1.0.0"
+    path: skills/normalized/quant/monte-carlo-and-resampling/skill.md
+    source_path: skills/incoming/28-monte-carlo-and-resampling.md
+    layer: QUANT
+    domains: [statistics, simulation]
+    triggers:
+      english: [bootstrap, Monte Carlo equity, drawdown distribution,
+        probability of ruin, block bootstrap, math.random seed reproducibility,
+        scenario analysis]
+      persian: [مونت کارلو, بوت‌استرپ, توزیع افت سرمایه, احتمال نابودی]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, overfitting-and-robustness, stochastic-processes,
+        pine-performance-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: financial-mathematics
+    name: Financial Mathematics
+    version: "1.0.0"
+    path: skills/normalized/quant/financial-mathematics/skill.md
+    source_path: skills/incoming/29-financial-mathematics.md
+    layer: QUANT
+    domains: [mathematics, performance-metrics]
+    triggers:
+      english: [simple vs log return, cumulative return compounding,
+        annualization sqrt N, CAGR, geometric mean return, bars per year]
+      persian: [ریاضیات مالی, بازده ساده و لگاریتمی, سده مرکب, سالانه‌سازی]
+    dependencies:
+      mandatory: []
+      optional: [mathematical-foundation, performance-metrics, backtesting-science,
+        time-series-analysis]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 2
+
+  - id: risk-management
+    name: Risk Management
+    version: "1.0.0"
+    path: skills/normalized/implementation/risk-management/skill.md
+    source_path: skills/incoming/30-risk-management.md
+    layer: IMPLEMENTATION
+    domains: [risk-control, strategies]
+    triggers:
+      english: [risk per trade, daily loss limit, strategy.risk,
+        drawdown accounting high-water mark, risk of ruin, exposure cap,
+        correlated positions risk]
+      persian: [مدیریت ریسک, حد ضرر روزانه, افت سرمایه, احتمال نابودی, سقف پوزیشن]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, position-sizing, monte-carlo-and-resampling,
+        multi-symbol-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-003
+    priority: 1
+
+  - id: position-sizing
+    name: Position Sizing
+    version: "1.0.0"
+    path: skills/normalized/implementation/position-sizing/skill.md
+    source_path: skills/incoming/31-position-sizing.md
+    layer: IMPLEMENTATION
+    domains: [risk-control, strategies]
+    triggers:
+      english: [fixed fractional sizing, ATR volatility sizing, Kelly criterion,
+        anti-martingale, position size from stop, qty calculation]
+      persian: [سایز پوزیشن, ریسک ثابت درصدی, کریتری کلی, آنتی مارتینگل]
+    dependencies:
+      mandatory: []
+      optional: [risk-management, strategy-engine, statistical-testing,
+        regime-detection]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 1
+
+  - id: performance-metrics
+    name: Performance Metrics
+    version: "1.0.0"
+    path: skills/normalized/quant/performance-metrics/skill.md
+    source_path: skills/incoming/32-performance-metrics.md
+    layer: QUANT
+    domains: [performance-metrics, evaluation]
+    triggers:
+      english: [expectancy, profit factor, win rate, Sharpe Sortino Calmar,
+        recovery factor, MAE MFE, strategy.netprofit, custom metrics dashboard]
+      persian: [شاخص‌های عملکرد, نسبت سود به ضرر, نرخ برد, شارپ و سورتینو]
+    dependencies:
+      mandatory: []
+      optional: [financial-mathematics, statistical-testing,
+        drawing-and-visualization, strategy-engine]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 1
+
+  - id: trade-management
+    name: Trade Management
+    version: "1.0.0"
+    path: skills/normalized/implementation/trade-management/skill.md
+    source_path: skills/incoming/33-trade-management.md
+    layer: IMPLEMENTATION
+    domains: [strategies, exits]
+    triggers:
+      english: [stop loss target, trailing stop, break-even move,
+        R multiple targets, chandelier stop, structure stop, time stop,
+        partial exit]
+      persian: [حد ضرر و حد سود, حد ضرر متحرک, سیو سود پله‌ای,
+        خروج بر اساس ساختار]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, tradingview-execution-model,
+        repainting-and-lookahead, regime-detection]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 1
+
+  - id: technical-analysis-core
+    name: Technical Analysis Core
+    version: "1.0.0"
+    path: skills/normalized/research/technical-analysis-core/skill.md
+    source_path: skills/incoming/34-technical-analysis-core.md
+    layer: RESEARCH
+    domains: [technical-analysis, indicator-design]
+    triggers:
+      english: [five pillars of technical analysis, indicator classification,
+        one indicator per pillar, redundant oscillators,
+        which indicator should I use, combine indicators]
+      persian: [تحلیل تکنیکال, طبقه‌بندی اندیکاتورها, ترکیب اندیکاتورها]
+    dependencies:
+      mandatory: []
+      optional: [trend-indicators, momentum-indicators, volatility-indicators,
+        volume-analysis]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: trend-indicators
+    name: Trend Indicators
+    version: "1.0.0"
+    path: skills/normalized/research/trend-indicators/skill.md
+    source_path: skills/incoming/35-trend-indicators.md
+    layer: RESEARCH
+    domains: [technical-analysis, trend]
+    triggers:
+      english: [moving average family, EMA vs RMA Wilder, HMA formula,
+        ALMA parameters, supertrend direction sign, ADX DMI,
+        KAMA manual implementation, MA crossover lag]
+      persian: [اندیکاتورهای روند, میانگین متحرک, سوپرترند, شاخص جهت‌دار ADX]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, repainting-and-lookahead,
+        regime-detection, optimization-and-calibration]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: momentum-indicators
+    name: Momentum Indicators
+    version: "1.0.0"
+    path: skills/normalized/research/momentum-indicators/skill.md
+    source_path: skills/incoming/36-momentum-indicators.md
+    layer: RESEARCH
+    domains: [technical-analysis, momentum]
+    triggers:
+      english: [RSI Wilder formula, stochastic slow fast, CCI formula,
+        Williams %R, TSI, divergence detection, oscillator regime behavior]
+      persian: [اندیکاتورهای مومنتوم, شاخص RSI, همگرایی و واگرایی, اسیلاتور]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, regime-detection, statistics-core,
+        repainting-and-lookahead]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: volatility-indicators
+    name: Volatility Indicators
+    version: "1.0.0"
+    path: skills/normalized/research/volatility-indicators/skill.md
+    source_path: skills/incoming/37-volatility-indicators.md
+    layer: RESEARCH
+    domains: [technical-analysis, volatility]
+    triggers:
+      english: [ATR true range, Bollinger Bands bbw percentB,
+        Keltner Channels squeeze, Donchian manual,
+        historical volatility annualize, EWMA realized vol]
+      persian: [اندیکاتورهای نوسان, باند بولینگر, کانال دونچین, نوسان تاریخی]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, time-series-analysis,
+        trade-management, falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: volume-analysis
+    name: Volume Analysis
+    version: "1.0.0"
+    path: skills/normalized/research/volume-analysis/skill.md
+    source_path: skills/incoming/38-volume-analysis.md
+    layer: RESEARCH
+    domains: [technical-analysis, volume]
+    triggers:
+      english: [OBV VWAP, relative volume RVOL, volume delta CVD approximation,
+        volume profile POC value area, anchored VWAP, volume anomalies]
+      persian: [تحلیل حجم, حجم نسبی, پروفایل حجمی, DELTA و CVD]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, mtf-engineering,
+        multi-symbol-engineering, data-integrity]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: price-action-patterns
+    name: Price Action Patterns
+    version: "1.0.0"
+    path: skills/normalized/research/price-action-patterns/skill.md
+    source_path: skills/incoming/39-price-action-patterns.md
+    layer: RESEARCH
+    domains: [technical-analysis, price-action]
+    triggers:
+      english: [candlestick pattern detection, engulfing doji hammer,
+        pivot swing points, breakout breakdown logic, support resistance zones,
+        false breakout check]
+      persian: [الگوهای کندلی, پیوت و سوینگ, شکست سطوح, حمایت و مقاومت]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, repainting-and-lookahead,
+        drawing-and-visualization, liquidity-and-price-structure]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 2
+
+  - id: market-structure
+    name: Market Structure
+    version: "1.0.0"
+    path: skills/normalized/research/market-structure/skill.md
+    source_path: skills/incoming/40-market-structure.md
+    layer: RESEARCH
+    domains: [technical-analysis, market-structure]
+    triggers:
+      english: [HH HL LH LL, BOS break of structure, CHoCH change of character,
+        internal vs external structure, swing engine SMC, trend state machine]
+      persian: [ساختار بازار, شکست ساختار, تغییر کاراکتر,
+        ساختار داخلی و بیرونی]
+    dependencies:
+      mandatory: []
+      optional: [price-action-patterns, repainting-and-lookahead,
+        regime-detection, liquidity-and-price-structure]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-004
+    priority: 1
+  - id: liquidity-and-price-structure
+    name: Liquidity & Price Structure
+    version: "1.0.0"
+    path: skills/normalized/research/liquidity-and-price-structure/skill.md
+    source_path: skills/incoming/41-liquidity-and-price-structure.md
+    layer: RESEARCH
+    domains: [market-structure, liquidity]
+    triggers:
+      english: [liquidity pools sweeps, stop run, fair value gap FVG,
+        order block OB, displacement, consequent encroachment, inverse FVG,
+        equal highs lows]
+      persian: [نقدینگی و استاپ‌هانت, گپ ارزش منصفانه, بلوک سفارش,
+        جابجایی قیمتی]
+    dependencies:
+      mandatory: []
+      optional: [market-structure, price-action-patterns, signal-fusion,
+        falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 1
+  - id: fibonacci-and-harmonic
+    name: Fibonacci & Harmonic
+    version: "1.0.0"
+    path: skills/normalized/research/fibonacci-and-harmonic/skill.md
+    source_path: skills/incoming/42-fibonacci-and-harmonic.md
+    layer: RESEARCH
+    domains: [market-structure, geometry]
+    triggers:
+      english: [fib retracement extension, golden pocket confluence,
+        harmonic XABCD, Gartley Bat Butterfly Crab,
+        PRZ potential reversal zone, measured move projection]
+      persian: [فیبوناچی, الگوهای هارمونیک, ناحیه بازگشت احتمالی,
+        هم‌پوشانی سطوح]
+    dependencies:
+      mandatory: []
+      optional: [analytical-geometry, market-structure, signal-fusion,
+        drawing-and-visualization]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: advanced-market-geometry
+    name: Advanced Market Geometry
+    version: "1.0.0"
+    path: skills/normalized/research/advanced-market-geometry/skill.md
+    source_path: skills/incoming/43-advanced-market-geometry.md
+    layer: RESEARCH
+    domains: [market-structure, geometry]
+    triggers:
+      english: [regression channel, parallel channel construction,
+        trendline break test, Gann fan normalized, square of nine,
+        Elliott wave segmentation, measured move flag pole]
+      persian: [هندسه پیشرفته بازار, کانال‌ها و خط روند, گان و زاویه‌ها,
+        امواج الیوت]
+    dependencies:
+      mandatory: []
+      optional: [analytical-geometry, regression-correlation,
+        fibonacci-and-harmonic, falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: quantitative-analysis
+    name: Quantitative Analysis
+    version: "1.0.0"
+    path: skills/normalized/research/quantitative-analysis/skill.md
+    source_path: skills/incoming/44-quantitative-analysis.md
+    layer: RESEARCH
+    domains: [quant-methods, signal-design]
+    triggers:
+      english: [alpha factor, factor normalization, composite score,
+        information coefficient IC, rank IC, feature engineering,
+        factor weighting]
+      persian: [تحلیل کمّی, فاکتور و آلفا, امتیاز ترکیبی, ضریب اطلاعات]
+    dependencies:
+      mandatory: []
+      optional: [statistics-core, multi-symbol-engineering,
+        time-series-analysis, walk-forward-and-validation]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: signal-engineering
+    name: Signal Engineering
+    version: "1.0.0"
+    path: skills/normalized/research/signal-engineering/skill.md
+    source_path: skills/incoming/45-signal-engineering.md
+    layer: RESEARCH
+    domains: [quant-methods, signal-design]
+    triggers:
+      english: [signal lifecycle, noise filter cooldown,
+        signal scoring threshold, multi-bar confirmation,
+        confidence scoring, signal decay half-life]
+      persian: [مهندسی سیگنال, فیلتر نویز, تایید چند کندله,
+        افت اعتبار سیگنال]
+    dependencies:
+      mandatory: []
+      optional: [signal-fusion, tradingview-execution-model, mtf-engineering,
+        adaptive-systems]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 1
+  - id: signal-fusion
+    name: Signal Fusion
+    version: "1.0.0"
+    path: skills/normalized/research/signal-fusion/skill.md
+    source_path: skills/incoming/46-signal-fusion.md
+    layer: RESEARCH
+    domains: [quant-methods, signal-design]
+    triggers:
+      english: [weighted voting signals, ensemble confluence,
+        contradiction detection, hierarchical fusion veto,
+        Bayesian fusion likelihood ratio, combine indicators signals]
+      persian: [تلفیق سیگنال‌ها, رأی‌گیری وزنی, تشخیص تناقض, تلفیق بیزی]
+    dependencies:
+      mandatory: []
+      optional: [probability, quantitative-analysis, regime-detection,
+        monte-carlo-and-resampling]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 1
+  - id: regime-detection
+    name: Regime Detection
+    version: "1.0.0"
+    path: skills/normalized/research/regime-detection/skill.md
+    source_path: skills/incoming/47-regime-detection.md
+    layer: RESEARCH
+    domains: [quant-methods, market-state]
+    triggers:
+      english: [market regime classification, trending vs ranging,
+        volatility regime percentile, Hurst variance ratio regime,
+        transitional state, ADX threshold regime]
+      persian: [تشخیص رژیم بازار, رونددار یا رنج, رژیم نوسان]
+    dependencies:
+      mandatory: []
+      optional: [market-structure, volatility-indicators,
+        stochastic-processes, falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 1
+  - id: adaptive-systems
+    name: Adaptive Systems
+    version: "1.0.0"
+    path: skills/normalized/research/adaptive-systems/skill.md
+    source_path: skills/incoming/48-adaptive-systems.md
+    layer: RESEARCH
+    domains: [quant-methods, adaptivity]
+    triggers:
+      english: [adaptive thresholds percentile, dynamic lookback,
+        volatility normalization, regime-dependent parameters,
+        KAMA efficiency ratio, adaptive overfitting]
+      persian: [سیستم‌های تطبیقی, آستانه‌های داینامیک, نرمال‌سازی نوسان]
+    dependencies:
+      mandatory: []
+      optional: [regime-detection, trend-indicators, statistics-core,
+        walk-forward-and-validation]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: signal-processing
+    name: Signal Processing
+    version: "1.0.0"
+    path: skills/normalized/research/signal-processing/skill.md
+    source_path: skills/incoming/49-signal-processing.md
+    layer: RESEARCH
+    domains: [signal-processing, indicator-design]
+    triggers:
+      english: [SuperSmoother Ehlers, roofing filter, high-pass band-pass,
+        dominant cycle autocorrelation, SNR signal to noise, detrending,
+        smoothing ladder]
+      persian: [پردازش سیگنال, فیلتر سوپراسموس, سیکل غالب,
+        نسبت سیگنال به نویز]
+    dependencies:
+      mandatory: []
+      optional: [technical-analysis-core, regime-detection, adaptive-systems,
+        numerical-methods]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: statistical-arbitrage
+    name: Statistical Arbitrage
+    version: "1.0.0"
+    path: skills/normalized/research/statistical-arbitrage/skill.md
+    source_path: skills/incoming/50-statistical-arbitrage.md
+    layer: RESEARCH
+    domains: [quant-methods, pairs-trading]
+    triggers:
+      english: [pair trading, cointegration vs correlation, spread z-score,
+        Engle-Granger, hedge ratio beta, half-life spread,
+        correlation breakdown guard]
+      persian: [آربیتراژ آماری, معامله جفتی, هم‌انباشتگی, نیم‌عمر اسپرد]
+    dependencies:
+      mandatory: []
+      optional: [regression-correlation, stochastic-processes,
+        multi-symbol-engineering, data-integrity]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-005
+    priority: 2
+  - id: backtesting-science
+    name: Backtesting Science
+    version: "1.0.0"
+    path: skills/normalized/research/backtesting-science/skill.md
+    source_path: skills/incoming/51-backtesting-science.md
+    layer: RESEARCH
+    domains: [backtesting, validation]
+    triggers:
+      english: [backtest interpretation, bar magnifier, deep backtesting,
+        slippage commission costs, lookahead survivorship selection bias,
+        backtest validation gate]
+      persian: [بک‌تست, سوگیری‌های بک‌تست, ذره‌بین کندل, هزینه و اسلیپیج]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, repainting-and-lookahead,
+        walk-forward-and-validation, overfitting-and-robustness,
+        statistical-testing]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 1
+  - id: optimization-and-calibration
+    name: Optimization & Calibration
+    version: "1.0.0"
+    path: skills/normalized/research/optimization-and-calibration/skill.md
+    source_path: skills/incoming/52-optimization-and-calibration.md
+    layer: RESEARCH
+    domains: [backtesting, optimization]
+    triggers:
+      english: [parameter optimization, grid search random search,
+        sensitivity analysis, parameter plateau, calibration vs optimization,
+        no built-in optimizer]
+      persian: [بهینه‌سازی پارامتر, تحلیل حساسیت, کالیبراسیون]
+    dependencies:
+      mandatory: []
+      optional: [overfitting-and-robustness, walk-forward-and-validation,
+        pine-code-architecture, pine-version-intelligence]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 1
+  - id: walk-forward-and-validation
+    name: Walk-Forward & Validation
+    version: "1.0.0"
+    path: skills/normalized/research/walk-forward-and-validation/skill.md
+    source_path: skills/incoming/53-walk-forward-and-validation.md
+    layer: RESEARCH
+    domains: [backtesting, validation]
+    triggers:
+      english: [in-sample out-of-sample, walk-forward analysis,
+        rolling window validation, anchored window, OOS discipline,
+        date gating backtest]
+      persian: [درون‌نمونه و برون‌نمونه, اعتبارسنجی قدم‌به‌قدم, بازه غلتان]
+    dependencies:
+      mandatory: []
+      optional: [statistical-testing, overfitting-and-robustness,
+        backtesting-science, drawing-and-visualization]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 1
+  - id: overfitting-and-robustness
+    name: Overfitting & Robustness
+    version: "1.0.0"
+    path: skills/normalized/research/overfitting-and-robustness/skill.md
+    source_path: skills/incoming/54-overfitting-and-robustness.md
+    layer: RESEARCH
+    domains: [backtesting, robustness]
+    triggers:
+      english: [curve fitting, overfitting, robustness battery,
+        parameter stability, multiple testing false positive, trial ledger]
+      persian: [بیش‌برازش, استحکام استراتژی, منحنی برازش]
+    dependencies:
+      mandatory: []
+      optional: [walk-forward-and-validation, monte-carlo-and-resampling,
+        position-sizing, regime-detection, backtesting-science,
+        pine-code-architecture]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 1
+  - id: macro-economics
+    name: Macro Economics
+    version: "1.0.0"
+    path: skills/normalized/research/macro-economics/skill.md
+    source_path: skills/incoming/55-macro-economics.md
+    layer: RESEARCH
+    domains: [macro, market-context]
+    triggers:
+      english: [request.economic, CPI inflation data, interest rate INTR,
+        GDP unemployment macro series, step series macro data,
+        economic calendar limitation]
+      persian: [اقتصاد کلان, تورم و نرخ بهره, داده‌های اقتصادی]
+    dependencies:
+      mandatory: []
+      optional: [intermarket-analysis, multi-symbol-engineering,
+        documentation-verification, falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 2
+  - id: intermarket-analysis
+    name: Intermarket Analysis
+    version: "1.0.0"
+    path: skills/normalized/research/intermarket-analysis/skill.md
+    source_path: skills/incoming/56-intermarket-analysis.md
+    layer: RESEARCH
+    domains: [market-context, correlations]
+    triggers:
+      english: [DXY dollar index filter, yields equities relationship,
+        VIX stress regime, correlation regime gating, risk on risk off,
+        gold oil proxy]
+      persian: [تحلیل بین‌بازاری, رابطه دلار و طلا, رژیم همبستگی]
+    dependencies:
+      mandatory: []
+      optional: [multi-symbol-engineering, data-integrity,
+        repainting-and-lookahead, regime-detection, macro-economics]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 2
+  - id: market-microstructure
+    name: Market Microstructure
+    version: "1.0.0"
+    path: skills/normalized/research/market-microstructure/skill.md
+    source_path: skills/incoming/57-market-microstructure.md
+    layer: RESEARCH
+    domains: [market-context, execution]
+    triggers:
+      english: [bid ask spread pine, order flow footprint,
+        slippage market impact, futures point value,
+        continuous contract rollover, syminfo.type branching]
+      persian: [ریزساختار بازار, اسپرد و نقدینگی, ارزش پوینت فیوچرز]
+    dependencies:
+      mandatory: []
+      optional: [strategy-engine, backtesting-science,
+        multi-symbol-engineering, volume-analysis,
+        asset-class-specialization, liquidity-and-price-structure]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 1
+  - id: asset-class-specialization
+    name: Asset-Class Specialization
+    version: "1.0.0"
+    path: skills/normalized/research/asset-class-specialization/skill.md
+    source_path: skills/incoming/58-asset-class-specialization.md
+    layer: RESEARCH
+    domains: [market-context, asset-classes]
+    triggers:
+      english: [crypto forex equities futures differences,
+        syminfo.type class detection, session handling per class,
+        porting strategy across markets, index not tradable,
+        tick volume forex]
+      persian: [تفاوت کلاس‌های دارایی, پرت کردن استراتژی بین بازارها,
+        سشن‌های هر کلاس]
+    dependencies:
+      mandatory: []
+      optional: [market-microstructure, data-integrity,
+        multi-symbol-engineering, position-sizing, volume-analysis,
+        falsification-and-counterexamples]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 2
+  - id: behavioral-finance
+    name: Behavioral Finance
+    version: "1.0.0"
+    path: skills/normalized/research/behavioral-finance/skill.md
+    source_path: skills/incoming/59-behavioral-finance.md
+    layer: RESEARCH
+    domains: [behavioral, market-context]
+    triggers:
+      english: [loss aversion disposition effect, herding anchoring recency
+        bias, behavioral market signature, contrarian filter design,
+        funding rate sentiment]
+      persian: [رفتارشناسی بازار, سوگیری‌های رفتاری, اثر واگذاری]
+    dependencies:
+      mandatory: []
+      optional: [market-psychology, liquidity-and-price-structure,
+        quantitative-analysis, walk-forward-and-validation,
+        trade-management, performance-metrics, volume-analysis]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 2
+  - id: market-psychology
+    name: Market Psychology
+    version: "1.0.0"
+    path: skills/normalized/research/market-psychology/skill.md
+    source_path: skills/incoming/60-market-psychology.md
+    layer: RESEARCH
+    domains: [behavioral, market-context]
+    triggers:
+      english: [fear greed proxy VIX, put call ratio PCR, capitulation bar,
+        FOMO detection, crowd state euphoria panic, funding rate extremes]
+      persian: [روانشناسی بازار, ترس و طمع, کندل کاپیتولیشن]
+    dependencies:
+      mandatory: []
+      optional: [behavioral-finance, intermarket-analysis,
+        regime-detection, signal-fusion, volume-analysis,
+        market-structure, multi-symbol-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-006
+    priority: 2
+  - id: system-psychology
+    name: System Psychology
+    version: "1.0.0"
+    path: skills/normalized/research/system-psychology/skill.md
+    source_path: skills/incoming/61-system-psychology.md
+    layer: RESEARCH
+    domains: [behavioral, system-design]
+    triggers:
+      english: [drawdown tolerance operator, overtrading circuit breaker,
+        signal frequency fit, alert fatigue, automation ladder,
+        deployment readiness human]
+      persian: [روانشناسی سیستم معاملاتی, تحمل افت سرمایه,
+        معامله‌گری بیش از حد]
+    dependencies:
+      mandatory: []
+      optional: [position-sizing, monte-carlo-and-resampling,
+        signal-engineering, risk-management, alerts-and-webhooks,
+        tradingview-execution-model, strategy-engine, backtesting-science]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: research-methodology
+    name: Research Methodology
+    version: "1.0.0"
+    path: skills/normalized/research/research-methodology/skill.md
+    source_path: skills/incoming/62-research-methodology.md
+    layer: RESEARCH
+    domains: [research-methods, validation]
+    triggers:
+      english: [scientific method trading, preregistration hypothesis,
+        reproducibility seed pinning, HARKing metric shopping,
+        verdict PASS FAIL INCONCLUSIVE, research loop]
+      persian: [روش‌شناسی پژوهش, فرضیه آزمون‌پذیر, تکرارپذیری]
+    dependencies:
+      mandatory: []
+      optional: [walk-forward-and-validation, overfitting-and-robustness,
+        falsification-and-counterexamples, monte-carlo-and-resampling,
+        statistical-testing, pine-project-documentation]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: hypothesis-and-formula-engineering
+    name: Hypothesis & Formula Engineering
+    version: "1.0.0"
+    path: skills/normalized/research/hypothesis-and-formula-engineering/skill.md
+    source_path: skills/incoming/63-hypothesis-and-formula-engineering.md
+    layer: RESEARCH
+    domains: [research-methods, signal-design]
+    triggers:
+      english: [falsifiable trading hypothesis, formula derivation,
+        alternative formulations artifact guard, assumption failure mapping,
+        mechanism class, dimension check ATR scaled]
+      persian: [مهندسی فرضیه, فرمول‌سازی, فرمول‌های جایگزین]
+    dependencies:
+      mandatory: []
+      optional: [statistics-core, adaptive-systems, time-series-analysis,
+        regime-detection, probability, backtesting-science,
+        market-microstructure]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: natural-language-to-math
+    name: Natural Language to Math
+    version: "1.0.0"
+    path: skills/normalized/formalization/natural-language-to-math/skill.md
+    source_path: skills/incoming/64-natural-language-to-math.md
+    layer: FORMALIZATION
+    domains: [formalization, requirements]
+    triggers:
+      english: [verbal rule to pine, formal logic boolean conditions,
+        ambiguity table requirements, de morgan precedence guard,
+        translation validation echo, vague requirement clarification]
+      persian: [تبدیل قواعد کلامی به ریاضی, منطق صوری, رفع ابهام شرط‌ها]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, data-integrity,
+        tradingview-execution-model, repainting-and-lookahead,
+        liquidity-and-price-structure, requirements-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: research-to-code
+    name: Research to Code
+    version: "1.0.0"
+    path: skills/normalized/research/research-to-code/skill.md
+    source_path: skills/incoming/65-research-to-code.md
+    layer: RESEARCH
+    domains: [research-methods, implementation-planning]
+    triggers:
+      english: [research to production pipeline, stage gates artifact,
+        signal path diff, pine compatible model, warm-up state inventory,
+        productionization divergence]
+      persian: [از پژوهش تا کد, دروازه‌های مرحله‌ای,
+        تبدیل مدل به پیاده‌سازی]
+    dependencies:
+      mandatory: []
+      optional: [hypothesis-and-formula-engineering,
+        pine-code-architecture, pine-performance-engineering,
+        repainting-and-lookahead, mtf-engineering, data-integrity,
+        backtesting-science, drawing-and-visualization,
+        performance-metrics]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: falsification-and-counterexamples
+    name: Falsification & Counterexamples
+    version: "1.0.0"
+    path: skills/normalized/research/falsification-and-counterexamples/skill.md
+    source_path: skills/incoming/66-falsification-and-counterexamples.md
+    layer: RESEARCH
+    domains: [research-methods, validation]
+    triggers:
+      english: [counterexample hunt, kill criteria refuted,
+        random signal control, simplification test, cost stress test,
+        red team strategy]
+      persian: [ابطال فرضیه, مثال نقض, تست تخریب استراتژی]
+    dependencies:
+      mandatory: []
+      optional: [liquidity-and-price-structure, data-integrity,
+        monte-carlo-and-resampling, probability, regime-detection,
+        asset-class-specialization, optimization-and-calibration,
+        overfitting-and-robustness, backtesting-science,
+        statistical-testing, pine-debugging-and-testing,
+        repainting-and-lookahead, pine-performance-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: causal-reasoning
+    name: Causal Reasoning
+    version: "1.0.0"
+    path: skills/normalized/research/causal-reasoning/skill.md
+    source_path: skills/incoming/67-causal-reasoning.md
+    layer: RESEARCH
+    domains: [research-methods, epistemics]
+    triggers:
+      english: [correlation vs causation markets, granger causality,
+        confounder spurious correlation, bradford hill criteria,
+        reflexivity edge decay, causal claim discipline]
+      persian: [استدلال علّی, همبستگی و علیت, شبه‌همبستگی]
+    dependencies:
+      mandatory: []
+      optional: [statistical-testing, overfitting-and-robustness,
+        regime-detection, repainting-and-lookahead, intermarket-analysis,
+        market-microstructure, research-methodology, market-psychology,
+        backtesting-science]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 2
+  - id: pine-code-architecture
+    name: Pine Code Architecture
+    version: "1.0.0"
+    path: skills/normalized/implementation/pine-code-architecture/skill.md
+    source_path: skills/incoming/68-pine-code-architecture.md
+    layer: IMPLEMENTATION
+    domains: [code-architecture, quality]
+    triggers:
+      english: [layered script structure, separation of concerns pine,
+        DRY single responsibility,
+        dependency direction viz signals calc data,
+        function architecture tuples, god script refactor]
+      persian: [معماری کد پاین, جداسازی مسئولیت‌ها, بازآرایی اسکریپت]
+    dependencies:
+      mandatory: []
+      optional: [pine-functions-libraries, pine-language-core,
+        pine-type-system, pine-data-structures, market-structure,
+        regime-detection, research-to-code, drawing-and-visualization,
+        pine-debugging-and-testing]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: pine-performance-engineering
+    name: Pine Performance Engineering
+    version: "1.0.0"
+    path: skills/normalized/implementation/pine-performance-engineering/skill.md
+    source_path: skills/incoming/69-pine-performance-engineering.md
+    layer: IMPLEMENTATION
+    domains: [performance, budgets]
+    triggers:
+      english: [pine profiler flame icons, loop timeout optimization,
+        array ring buffer cap, request budget dedupe,
+        incremental rolling sum, 500ms loop limit]
+      persian: [بهینه‌سازی کارایی پاین, خطای تایم‌اوت حلقه, پروفایلر]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, drawing-and-visualization,
+        pine-data-structures, multi-symbol-engineering, mtf-engineering,
+        monte-carlo-and-resampling, numerical-methods,
+        pine-debugging-and-testing, time-series-analysis]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: pine-debugging-and-testing
+    name: Pine Debugging & Testing
+    version: "1.0.0"
+    path: skills/normalized/verification/pine-debugging-and-testing/skill.md
+    source_path: skills/incoming/70-pine-debugging-and-testing.md
+    layer: VERIFICATION
+    domains: [verification, debugging]
+    triggers:
+      english: [pine logs log.info, error codes CE RE CW,
+        systematic debugging procedure, unit testing pure functions,
+        regression golden set, data window plot debugging]
+      persian: [دیباگ و تست پاین, لاگ‌های پاین, خطاهای کامپایل و اجرا]
+    dependencies:
+      mandatory: []
+      optional: [pine-language-core, pine-type-system, data-integrity,
+        repainting-and-lookahead, tradingview-execution-model,
+        mathematical-foundation, pine-performance-engineering,
+        monte-carlo-and-resampling, asset-class-specialization,
+        pine-project-documentation]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-007
+    priority: 1
+  - id: code-review-and-refactoring
+    name: Code Review & Refactoring
+    version: "1.0.0"
+    path: skills/normalized/verification/code-review-and-refactoring/skill.md
+    source_path: skills/incoming/71-code-review-and-refactoring.md
+    layer: VERIFICATION
+    domains: [verification, code-quality]
+    triggers:
+      english: [structured code review, repaint audit checklist,
+        behavior preserving refactoring, third party script audit,
+        review verdict format, duplicate computation detection]
+      persian: [بازبینی کد, بازآرایی ایمن, ممیزی ریپینت]
+    dependencies:
+      mandatory: []
+      optional: [pine-version-intelligence, trend-indicators,
+        momentum-indicators, volatility-indicators, natural-language-to-math,
+        repainting-and-lookahead, pine-performance-engineering,
+        drawing-and-visualization, data-integrity, pine-code-architecture,
+        project-knowledge-management, pine-project-documentation,
+        research-to-code, pine-debugging-and-testing, backtesting-science,
+        multi-symbol-engineering, pine-functions-libraries]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1
+  - id: requirements-engineering
+    name: Requirements Engineering
+    version: "1.0.0"
+    path: skills/normalized/formalization/requirements-engineering/skill.md
+    source_path: skills/incoming/72-requirements-engineering.md
+    layer: FORMALIZATION
+    domains: [formalization, requirements]
+    triggers:
+      english: [requirements extraction, acceptance criteria GIVEN WHEN THEN,
+        formal specification inputs state signals, edge case sweep,
+        non-goals scope control, must-resolve ambiguity list]
+      persian: [مهندسی نیازمندی‌ها, معیار پذیرش, مشخصات رسمی]
+    dependencies:
+      mandatory: []
+      optional: [natural-language-to-math, tradingview-execution-model,
+        repainting-and-lookahead, position-sizing,
+        drawing-and-visualization, alerts-and-webhooks,
+        indicator-strategy-library-architecture, risk-management,
+        multi-symbol-engineering, mtf-engineering, backtesting-science,
+        system-psychology, asset-class-specialization,
+        pine-performance-engineering, strategy-engine, trade-management]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1
+  - id: project-knowledge-management
+    name: Project Knowledge Management
+    version: "1.0.0"
+    path: skills/normalized/meta/project-knowledge-management/skill.md
+    source_path: skills/incoming/73-project-knowledge-management.md
+    layer: META
+    domains: [knowledge-management, documentation]
+    triggers:
+      english: [project manifest single source of truth,
+        formula registry variable dictionary, decisions log ADR,
+        trial ledger, session start consistency check, write before code]
+      persian: [مدیریت دانش پروژه, ثبت تصمیم‌ها, دفترچه آزمایش‌ها]
+    dependencies:
+      mandatory: []
+      optional: [pine-code-architecture, hypothesis-and-formula-engineering,
+        research-methodology, overfitting-and-robustness,
+        backtesting-science, asset-class-specialization, risk-management,
+        intermarket-analysis, context-compression, research-to-code]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1
+  - id: context-compression
+    name: Context Compression
+    version: "1.0.0"
+    path: skills/normalized/meta/context-compression/skill.md
+    source_path: skills/incoming/74-context-compression.md
+    layer: META
+    domains: [knowledge-management, agent-operations]
+    triggers:
+      english: [context compression ladder, change only reasoning,
+        diff based context budget, state tuple compression,
+        re-anchor golden set, handoff between sessions]
+      persian: [فشرده‌سازی زمینه, استدلال تغییرمحور, خلاصه‌سازی وضعیت]
+    dependencies:
+      mandatory: []
+      optional: [project-knowledge-management, pine-code-architecture,
+        pine-debugging-and-testing, requirements-engineering,
+        backtesting-science, asset-class-specialization]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 2
+  - id: skill-routing
+    name: Skill Routing
+    version: "1.0.0"
+    path: skills/normalized/meta/skill-routing/skill.md
+    source_path: skills/incoming/75-skill-routing.md
+    layer: META
+    domains: [agent-operations, routing]
+    triggers:
+      english: [task classification routing, minimum skill set selection,
+        classification skill map, conflict hierarchy skills,
+        anti-patterns routing, verification routing]
+      persian: [مسیریابی مهارت‌ها, حداقل مهارت‌های لازم, طبقه‌بندی درخواست]
+    dependencies:
+      mandatory: []
+      optional: [pine-version-intelligence, documentation-verification,
+        requirements-engineering, natural-language-to-math,
+        code-review-and-refactoring, research-methodology,
+        falsification-and-counterexamples, walk-forward-and-validation,
+        regime-detection, adaptive-systems, pine-debugging-and-testing,
+        project-knowledge-management, pine-project-documentation,
+        context-compression, repainting-and-lookahead,
+        pine-performance-engineering]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1
+  - id: documentation-verification
+    name: Documentation Verification
+    version: "1.0.0"
+    path: skills/normalized/meta/documentation-verification/skill.md
+    source_path: skills/incoming/76-documentation-verification.md
+    layer: META
+    domains: [knowledge-management, verification]
+    triggers:
+      english: [verify API exists signature, documentation tiers T1 T2 T3 T4,
+        deprecated API detection, release notes check,
+        plan gated feature claim, anti hallucination gate]
+      persian: [راستی‌آزمایی مستندات, بررسی وجود تابع, تشخیص API منسوخ]
+    dependencies:
+      mandatory: []
+      optional: [pine-version-intelligence, pine-language-core,
+        pine-type-system, mtf-engineering, multi-symbol-engineering,
+        backtesting-science, drawing-and-visualization,
+        pine-performance-engineering, project-knowledge-management]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1
+  - id: pine-project-documentation
+    name: Pine Project Documentation
+    version: "1.0.0"
+    path: skills/normalized/meta/pine-project-documentation/skill.md
+    source_path: skills/incoming/77-pine-project-documentation.md
+    layer: META
+    domains: [documentation, delivery]
+    triggers:
+      english: [deliverable documentation set,
+        system spec formulas variables signals docs,
+        publication checklist tradingview, changelog validated rows,
+        doc drift control, in-code documentation standards]
+      persian: [مستندسازی پروژه پاین, چک‌لیست انتشار, مستندات تحویلی]
+    dependencies:
+      mandatory: []
+      optional: [requirements-engineering, hypothesis-and-formula-engineering,
+        research-methodology, project-knowledge-management,
+        pine-code-architecture, repainting-and-lookahead, mtf-engineering,
+        backtesting-science, walk-forward-and-validation,
+        pine-debugging-and-testing]
+    status: normalized
+    activation: eligible
+    validation_status: passed
+    import_batch: batch-008
+    priority: 1

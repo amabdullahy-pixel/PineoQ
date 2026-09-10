@@ -1,0 +1,125 @@
+# ============================================================================
+# CONTRACT SCHEMA — Implementation stage
+# ============================================================================
+# Specification of the Implementation CONTRACT only.
+# This file defines what Implementation receives and what it must produce.
+# It does NOT contain, and must never contain, executable Pine Script code.
+# ============================================================================
+
+schema_version: "1.1"
+stage: implementation
+predecessor: implementation_planning
+successor: post_verification
+
+# ----------------------------------------------------------------------------
+# v1.1 (Phase 8 — additive; NO status-enum change, NO gate redesign):
+#   + planning schema documented below (the blueprint this stage consumes):
+#     identity chain completion (planning_id = "plan-" + 12 hex of sha256,
+#     deterministic), planning_status: READY | READY_WITH_WARNINGS | BLOCKED |
+#     INVALID_INPUT, checks/findings/warnings/decisions[], architecture
+#     sections, modules[], dependency_graph, implementation_order,
+#     verification_hooks, implementation_allowed, next_stage — narrative
+#     authority: meta/implementation_planning_procedure.md
+#   + engine: implementation/implementation_plan.pl (core Perl, no CPAN)
+#   All v1.0 fields preserved below (unchanged) — backward compatible.
+# ----------------------------------------------------------------------------
+
+implementation:
+  # ============================================================================
+  # INPUT CONTRACT — required approvals (hard gate)
+  # ============================================================================
+  approved_formalization_id: null  # REQUIRED: formalization contract with implementation_allowed=true
+  approved_feasibility_id: null    # REQUIRED: feasibility contract with status=passed, blockers=[]
+  approved_plan_id: null           # planning fields below approved as the blueprint
+  plan:
+    selected_modules: []           # logical modules to build (engines, filters, outputs)
+    selected_skills: []            # Router-selected skills actually consumed
+    build_order: []                # ordered steps for implementation (module-level, no code)
+    rollback_plan: null            # what to restore if implementation fails verification
+
+  # ============================================================================
+  # PLANNING FIELDS (blueprint — populated during Implementation Planning)
+  # ============================================================================
+  variables: []                    # [{ name, type, qualifier(const/simple/series), purpose }]
+  functions: []                    # [{ name, signature, purpose, uses }] — names/behavior only
+  state_variables: []              # [{ name, mechanism(var/varip/array), lifecycle }]
+  signals: []                      # [{ name, direction, condition_ref, priority }] — refs into formalization
+  visual_outputs: []               # [{ kind(shape/plot/label/line/box/bg), purpose, budget_count }]
+  alerts: []                       # [{ name, trigger_ref, payload_plan, plot_index_map }]
+  assumptions: []                  # assumptions carried from formalization + any added (with ids)
+  pine_version_target: "6"         # fixed; v6 only
+
+  # ============================================================================
+  # OUTPUT CONTRACT — what Implementation must deliver (described, not written)
+  # ============================================================================
+  output:
+    artifacts: []                  # [{ path, kind(pine_script|mirror_txt), description }]
+    deliverable_summary: null      # what was built, mapped to the plan
+    plan_deviations: []            # [{ deviation, reason, user_approved }] — undocumented deviation forbidden
+    validation_status: null        # statically_reviewed | awaiting_user_compile | user_compiled
+    open_items: []                 # known limitations, deferred items
+
+  # --- Status & gate -----------------------------------------------------------------------
+  status: pending                  # pending | awaiting_approval | in_progress | completed | blocked | failed
+  blockers: []                     # [{ id, reason }] — e.g., missing approvals, upstream gate failures
+
+# ----------------------------------------------------------------------------
+# PLANNING CONTRACT (Phase 8 — emitted by implementation_plan.pl; the input
+# blueprint this stage consumes. Fields mirror the feasibility v1.1 style.)
+# ----------------------------------------------------------------------------
+planning:
+  # --- Identity -----------------------------------------------------------------
+  request_id: null                 # from the formalization contract
+  approved_routing_id: null        # mirrored across all upstream contracts
+  formalization_id: null           # approved specification
+  verification_id: null            # Phase-6 result id
+  feasibility_id: null             # Phase-7 result id (handoff gate)
+  planning_id: null                # "plan-" + 12 hex of sha256 over the canonical body (deterministic)
+
+  # --- Machine result --------------------------------------------------------------
+  planning_status: null            # READY | READY_WITH_WARNINGS | BLOCKED | INVALID_INPUT
+  checks: []                       # [{ check_id, domain, verdict: pass|warn|fail, findings: [ids] }]
+                                   # 14 fixed checks IP01..IP14 (fixed order — deterministic)
+  findings: []                     # [{ id, check_id, severity: blocker|warning, code, message, refs }]
+  blockers: []                     # [{ id, check_id, reason }] — ANY entry halts the pipeline
+  warnings: []                     # [{ id, check_id, code, message }] — surfaced, non-blocking
+  decisions: []                    # [{ id, subject, status: NEEDS_USER_INPUT, refs }] — never silently settled
+
+  # --- Architecture (explicit; verbatim-mirrored upstream content) -------------------
+  architecture: []                 # [{ layer, description, basis }] — deterministic layer model
+  modules: []                      # [{ module_id, purpose, inputs, outputs, dependencies: [],
+                                   #    source_requirements: [], verification_requirements: [], order }]
+  data_flow: []                    # [{ producer, transformation, consumer }]
+  state_architecture: []           # [{ subject, state_kind, lifecycle, refs }] — iff stateful mechanics
+  mtf_architecture: []             # [{ element, value, basis }] — iff mtf flag or HTF/LTF data
+  signal_architecture: []          # [{ signal_ref, condition_verbatim, prerequisites, precedence }]
+  drawing_architecture: []         # [{ subject, value, basis }] — iff drawing tokens; budget UNKNOWN
+  alert_architecture: []           # [{ subject, value, basis }] — iff alert tokens
+  performance_plan: []             # [{ element, value, basis }] — mechanical counters + carried warnings
+
+  # --- Ordering, hooks, traceability ---------------------------------------------------
+  dependency_graph: []             # [{ module_id, depends_on: [] }] — explicit; cycles/missing block
+  implementation_order: []         # topological (Kahn) order, deterministic tie-break
+  verification_hooks: []           # [{ module_id, hook, upstream_ref }] — planning metadata only
+  traceability:                    # upstream linkage (mirrored verbatim)
+    source_skills: []
+    verification_requirements: []
+    implementation_constraints: []
+
+  # --- Status & gate -----------------------------------------------------------------
+  implementation_allowed: false    # true iff planning_status in {READY, READY_WITH_WARNINGS}
+  next_stage: null                 # IMPLEMENTATION | HALT
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "Planning gate (Phase 8): ONLY planning_status READY or READY_WITH_WARNINGS opens Implementation (implementation_allowed=true, next_stage=IMPLEMENTATION); PARTIALLY_FEASIBLE / NOT_FEASIBLE / BLOCKED / INVALID_INPUT upstream results never reach a READY plan."
+  - "The plan mirrors requirements verbatim: conditions, formulas, timeframes, repaint classification, and feasibility constraints are copied, never decided; unresolved choices become decisions[] (NEEDS_USER_INPUT) with warnings — no semantic drift."
+  - "Dependency graph must be acyclic and fully resolved (B-DEP-CYCLE / B-DEP-MISSING otherwise); implementation order is the deterministic topological order of that graph."
+  - "NO-PINE RULE: neither the plan nor this schema ever contains Pine code — plans, references, and metadata only."
+  - "Implementation MUST NOT start unless approved_formalization_id AND approved_feasibility_id are set and valid."
+  - "Formalization contract must have implementation_allowed=true; feasibility contract must have blockers=[] and status=passed."
+  - "All plan deviations require user approval; undocumented deviations are blockers at Post-Verification."
+  - "This contract never contains Pine code — only plans, references, and artifact metadata."
+  - "Output artifacts carry honest validation labels: STATICALLY REVIEWED until user-reported compile."

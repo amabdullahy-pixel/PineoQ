@@ -1,0 +1,151 @@
+# ============================================================================
+# ROUTING SCENARIO FIXTURES — concrete registry-backed requests
+# ============================================================================
+# Validates the Phase-3 Router design (meta/skill_router.md, routing/2) end to
+# end against the REAL 77-skill registry via the Phase-4 engine:
+#   perl skills/agent/router.pl --scenarios tests/routing/scenarios
+#
+# Ground rules (spec-faithful):
+#   - Requests embed REGISTERED trigger phrases verbatim (English or Persian)
+#     because trigger fidelity is binding: fuzzy matching is disabled
+#     (config/routing.yaml matching_rules.trigger_fidelity.fuzzy_matching: false).
+#   - Expectations assert only spec-derivable properties: routing status,
+#     request class, Registry-sourced domains, selected/excluded membership,
+#     downstream gating, and mandatory trace sections.
+#   - Negative scenarios (controlled failures) are first-class: blocked and
+#     ambiguous outcomes validate the design's no-guessing guarantees.
+#
+# spec_refs trace each scenario back to TEST-ROUTING-00x specifications.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-001
+category: routing/scenario
+spec_refs: [TEST-ROUTING-003, TEST-ROUTING-007]
+title: "Debug request — debugging class core selected with full trace"
+request: "Debug my script: pine logs log.info show the signal fires twice"
+expect:
+  routing_status: ready
+  request_class: debugging
+  selected_include: [pine-version-intelligence, pine-debugging-and-testing]
+  selected_exclude: [code-review-and-refactoring]
+  downstream_allowed: true
+  trace_sections_present: [classification, matching, minimal_set_reasoning, dependency_resolution, redundancy_analysis]
+notes: "Skill 75 rule 2 debug map: core {06, 70}. Review skill (71) is related_but_distinct and must stay out of a debug set."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-002
+category: routing/scenario
+spec_refs: [TEST-ROUTING-003, TEST-ROUTING-004]
+title: "Debug + repaint audit — trigger-matched topic joins the class core"
+request: "Debug my script using pine logs log.info and a repaint audit"
+expect:
+  routing_status: ready
+  request_class: debugging
+  selected_include: [pine-version-intelligence, pine-debugging-and-testing, repainting-and-lookahead]
+  downstream_allowed: true
+notes: "Two capabilities: debugging method (class core) + repaint audit (exact trigger 'repaint audit' from repainting-and-lookahead). Minimal set = core + topic; nothing else loaded."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-003
+category: routing/scenario
+spec_refs: [TEST-ROUTING-003, TEST-ROUTING-004, TEST-ROUTING-007]
+title: "MTF request — data-acquisition domain, mtf-engineering selected"
+request: "Add a higher timeframe trend filter using request.security"
+expect:
+  routing_status: ready
+  request_class: MTF
+  primary_domain: data-acquisition
+  secondary_include: [mtf]
+  selected_include: [mtf-engineering]
+  downstream_allowed: true
+notes: "Exact trigger 'request.security' (registered English trigger of mtf-engineering). primary_domain and secondary domains are Registry domain ids (data-acquisition, mtf) — never invented."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-004
+category: routing/scenario
+spec_refs: [TEST-ROUTING-004, TEST-ROUTING-005]
+title: "MTF + non-repaint pattern — cross-capability set with API-fact gate"
+request: "Use request.security and the non-repainting HTF pattern in my script"
+expect:
+  routing_status: ready
+  selected_include: [pine-version-intelligence, mtf-engineering, repainting-and-lookahead]
+  downstream_allowed: true
+notes: "Code-touching request => pine-version-intelligence mandatory (skill 75 rule 3). MTF trigger + repaint trigger give a minimal cross-capability set; cap 5 respected."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-005
+category: routing/scenario
+spec_refs: [TEST-ROUTING-005]
+title: "Multi-domain strategy build — strategy core + momentum topic, related domain excluded"
+request: "Add divergence detection and RSI Wilder formula filters to my strategy entry logic"
+expect:
+  routing_status: ready
+  request_class: strategy_logic
+  selected_include: [pine-language-core, pine-version-intelligence, strategy-engine, momentum-indicators]
+  selected_exclude: [technical-analysis-core, volume-analysis]
+  downstream_allowed: true
+notes: "Cross-domain coverage (strategy + momentum TA) with the minimum set: class core {01, 06, 09} + exact triggers 'divergence detection' and 'RSI Wilder formula' (momentum-indicators). Related-but-unneeded TA/volume skills stay unloaded. Classification: strategy_logic dominates deterministically (2 markers: 'strategy', 'entry logic' vs 1: 'formula')."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-006
+category: routing/scenario
+spec_refs: [TEST-ROUTING-008]
+title: "Complementary pair — both retained per redundancy rules"
+request: "composite score with ensemble confluence and combine indicators signals"
+expect:
+  routing_status: ready
+  selected_include: [quantitative-analysis, signal-fusion]
+  redundancy_note_contains: complementary
+  downstream_allowed: true
+notes: "Import Mode overlap record: 44+46 complementary, action dependency_relationship. selection_rules.redundancy_rules.complementary_selected_together: retain_both."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-007
+category: routing/scenario
+spec_refs: [TEST-ROUTING-008]
+title: "Related-but-distinct pair — exactly the needed member kept, other excluded, NO merge"
+request: "deep backtesting validation"
+expect:
+  routing_status: ready
+  selected_include: [backtesting-science]
+  excluded_include: [strategy-engine]
+  redundancy_note_contains: related_but_distinct
+  downstream_allowed: true
+notes: "Import Mode record: 09+51 related_but_distinct, keep_separate. Router selects the capability the request names; the pair partner is excluded with the reason recorded; no merge is ever performed."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-008
+category: routing/scenario
+spec_refs: [TEST-ROUTING-002, TEST-ROUTING-007]
+title: "Publication documentation — META-layer skill discoverable by trigger"
+request: "Prepare the publication checklist tradingview expects for my script"
+expect:
+  routing_status: ready
+  selected_include: [pine-version-intelligence, pine-project-documentation]
+  downstream_allowed: true
+notes: "Exact trigger 'publication checklist tradingview' (pine-project-documentation). Code-touching => 06 core. META-layer skills are discoverable like any other eligible entry."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-009
+category: routing/scenario
+spec_refs: [TEST-ROUTING-004, TEST-ROUTING-007]
+title: "Persian debug request with no matching registered trigger — controlled failure (recorded coverage gap)"
+request: "چرا سیگنال من دو بار فعال می شود"
+expect:
+  routing_status: blocked
+  missing_capabilities_min_count: 1
+  downstream_allowed: false
+notes: "KNOWN COVERAGE GAP (recorded, not hidden): the registry registers no Persian trigger for double-signal/debug semantics; Persian triggers cover volume/TA terms (e.g. حجم نسبی). Trigger fidelity forbids broadening, so the Router fails in a controlled manner and itemizes unmatched terms. Remedy belongs to Import Mode (new/broadened Persian triggers), not to routing."
+
+# ---------------------------------------------------------------------------
+scenario_id: SCEN-ROUTING-010
+category: routing/scenario
+spec_refs: [TEST-ROUTING-007]
+title: "Ambiguity gate — RSI1 vs RSI3 without declared context stops before Formalization"
+request: "RSI1 > RSI3"
+expect:
+  routing_status: ambiguous
+  ambiguity_min_count: 2
+  downstream_allowed: false
+notes: "The documented ambiguity class: two parameterized RSI readings with no lengths/TF/symbol. The Router does not guess; missing information is itemized in routing.ambiguity."

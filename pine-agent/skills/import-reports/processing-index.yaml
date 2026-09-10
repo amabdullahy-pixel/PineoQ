@@ -1,0 +1,234 @@
+# ============================================================================
+# IMPORT PROCESSING INDEX — Pine Agent
+# ============================================================================
+# Resumable state for Import Mode. Update after every batch.
+# Files listed in processed_files were fully processed (report + registry where
+# applicable). batch-002 must start at the first entry of pending_files.
+# ============================================================================
+
+import_mode_state:
+  last_batch: batch-008
+  last_updated: "2026-09 (batch-008, FINAL)"
+  batch_size: 10
+
+processed_files:
+  - skills/incoming/01-pine-language-core.md
+  - skills/incoming/02-pine-type-system.md
+  - skills/incoming/03-pine-data-structures.md
+  - skills/incoming/04-pine-functions-libraries.md
+  - skills/incoming/05-pine-v6.md
+  - skills/incoming/06-pine-version-intelligence.md
+  - skills/incoming/07-tradingview-execution-model.md
+  - skills/incoming/08-indicator-strategy-library-architecture.md
+  - skills/incoming/09-strategy-engine.md
+  - skills/incoming/10-drawing-and-visualization.md
+  - skills/incoming/11-alerts-and-webhooks.md
+  - skills/incoming/12-repainting-and-lookahead.md
+  - skills/incoming/13-mtf-engineering.md
+  - skills/incoming/14-data-integrity.md
+  - skills/incoming/15-multi-symbol-engineering.md
+  - skills/incoming/16-mathematical-foundation.md
+  - skills/incoming/17-linear-algebra.md
+  - skills/incoming/18-calculus-and-optimization.md
+  - skills/incoming/19-analytical-geometry.md
+  - skills/incoming/20-numerical-methods.md
+  - skills/incoming/21-statistics-core.md
+  - skills/incoming/22-probability.md
+  - skills/incoming/23-statistical-distributions.md
+  - skills/incoming/24-regression-correlation.md
+  - skills/incoming/25-statistical-testing.md
+  - skills/incoming/26-time-series-analysis.md
+  - skills/incoming/27-stochastic-processes.md
+  - skills/incoming/28-monte-carlo-and-resampling.md
+  - skills/incoming/29-financial-mathematics.md
+  - skills/incoming/30-risk-management.md
+  - skills/incoming/31-position-sizing.md
+  - skills/incoming/32-performance-metrics.md
+  - skills/incoming/33-trade-management.md
+  - skills/incoming/34-technical-analysis-core.md
+  - skills/incoming/35-trend-indicators.md
+  - skills/incoming/36-momentum-indicators.md
+  - skills/incoming/37-volatility-indicators.md
+  - skills/incoming/38-volume-analysis.md
+  - skills/incoming/39-price-action-patterns.md
+  - skills/incoming/40-market-structure.md
+  - skills/incoming/41-liquidity-and-price-structure.md
+  - skills/incoming/42-fibonacci-and-harmonic.md
+  - skills/incoming/43-advanced-market-geometry.md
+  - skills/incoming/44-quantitative-analysis.md
+  - skills/incoming/45-signal-engineering.md
+  - skills/incoming/46-signal-fusion.md
+  - skills/incoming/47-regime-detection.md
+  - skills/incoming/48-adaptive-systems.md
+  - skills/incoming/49-signal-processing.md
+  - skills/incoming/50-statistical-arbitrage.md
+  - skills/incoming/51-backtesting-science.md
+  - skills/incoming/52-optimization-and-calibration.md
+  - skills/incoming/53-walk-forward-and-validation.md
+  - skills/incoming/54-overfitting-and-robustness.md
+  - skills/incoming/55-macro-economics.md
+  - skills/incoming/56-intermarket-analysis.md
+  - skills/incoming/57-market-microstructure.md
+  - skills/incoming/58-asset-class-specialization.md
+  - skills/incoming/59-behavioral-finance.md
+  - skills/incoming/60-market-psychology.md
+  - skills/incoming/61-system-psychology.md
+  - skills/incoming/62-research-methodology.md
+  - skills/incoming/63-hypothesis-and-formula-engineering.md
+  - skills/incoming/64-natural-language-to-math.md
+  - skills/incoming/65-research-to-code.md
+  - skills/incoming/66-falsification-and-counterexamples.md
+  - skills/incoming/67-causal-reasoning.md
+  - skills/incoming/68-pine-code-architecture.md
+  - skills/incoming/69-pine-performance-engineering.md
+  - skills/incoming/70-pine-debugging-and-testing.md
+  - skills/incoming/71-code-review-and-refactoring.md
+  - skills/incoming/72-requirements-engineering.md
+  - skills/incoming/73-project-knowledge-management.md
+  - skills/incoming/74-context-compression.md
+  - skills/incoming/75-skill-routing.md
+  - skills/incoming/76-documentation-verification.md
+  - skills/incoming/77-pine-project-documentation.md
+
+# Library complete (batch-008). pending_files intentionally empty.
+pending_files: []
+
+normalized_files:
+  - pine-language-core
+  - pine-type-system
+  - pine-data-structures
+  - pine-functions-libraries
+  - pine-v6
+  - pine-version-intelligence
+  - tradingview-execution-model
+  - indicator-strategy-library-architecture
+  - strategy-engine
+  - drawing-and-visualization
+  - alerts-and-webhooks
+  - repainting-and-lookahead
+  - mtf-engineering
+  - data-integrity
+  - multi-symbol-engineering
+  - mathematical-foundation
+  - linear-algebra
+  - calculus-and-optimization
+  - analytical-geometry
+  - numerical-methods
+  - statistics-core
+  - probability
+  - statistical-distributions
+  - regression-correlation
+  - statistical-testing
+  - time-series-analysis
+  - stochastic-processes
+  - monte-carlo-and-resampling
+  - financial-mathematics
+  - risk-management
+  - position-sizing
+  - performance-metrics
+  - trade-management
+  - technical-analysis-core
+  - trend-indicators
+  - momentum-indicators
+  - volatility-indicators
+  - volume-analysis
+  - price-action-patterns
+  - market-structure
+  - liquidity-and-price-structure
+  - fibonacci-and-harmonic
+  - advanced-market-geometry
+  - quantitative-analysis
+  - signal-engineering
+  - signal-fusion
+  - regime-detection
+  - adaptive-systems
+  - signal-processing
+  - statistical-arbitrage
+  - backtesting-science
+  - optimization-and-calibration
+  - walk-forward-and-validation
+  - overfitting-and-robustness
+  - macro-economics
+  - intermarket-analysis
+  - market-microstructure
+  - asset-class-specialization
+  - behavioral-finance
+  - market-psychology
+  - system-psychology
+  - research-methodology
+  - hypothesis-and-formula-engineering
+  - natural-language-to-math
+  - research-to-code
+  - falsification-and-counterexamples
+  - causal-reasoning
+  - pine-code-architecture
+  - pine-performance-engineering
+  - pine-debugging-and-testing
+  - code-review-and-refactoring
+  - requirements-engineering
+  - project-knowledge-management
+  - context-compression
+  - skill-routing
+  - documentation-verification
+  - pine-project-documentation
+
+review_needed_files: []
+rejected_files: []
+failed_files: []
+
+duplicate_candidates:
+  - {files: [skills/incoming/05-pine-v6.md, skills/incoming/06-pine-version-intelligence.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/07-tradingview-execution-model.md, skills/incoming/09-strategy-engine.md],
+     relationship: complementary, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/10-drawing-and-visualization.md, skills/incoming/69-pine-performance-engineering.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/09-strategy-engine.md, skills/incoming/51-backtesting-science.md],
+     relationship: related_but_distinct, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/06-pine-version-intelligence.md, skills/incoming/76-documentation-verification.md],
+     relationship: related_but_distinct, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/07-tradingview-execution-model.md, skills/incoming/12-repainting-and-lookahead.md],
+     relationship: complementary, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/10-drawing-and-visualization.md, skills/incoming/19-analytical-geometry.md],
+     relationship: complementary, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/16-mathematical-foundation.md, skills/incoming/20-numerical-methods.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/17-linear-algebra.md, skills/incoming/21-statistics-core.md],
+     relationship: complementary, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/18-calculus-and-optimization.md, skills/incoming/52-optimization-and-calibration.md],
+     relationship: complementary, action: no_action, resolved: true}
+  - {files: [skills/incoming/16-mathematical-foundation.md, skills/incoming/29-financial-mathematics.md],
+     relationship: complementary, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/30-risk-management.md, skills/incoming/31-position-sizing.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/28-monte-carlo-and-resampling.md, skills/incoming/51-backtesting-science.md],
+     relationship: related_but_distinct, action: no_action, resolved: true}
+  - {files: [skills/incoming/25-statistical-testing.md, skills/incoming/54-overfitting-and-robustness.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/34-technical-analysis-core.md, skills/incoming/35-trend-indicators.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/39-price-action-patterns.md, skills/incoming/40-market-structure.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/40-market-structure.md, skills/incoming/47-regime-detection.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/39-price-action-patterns.md, skills/incoming/41-liquidity-and-price-structure.md],
+     relationship: related_but_distinct, action: keep_separate, resolved: true}
+  - {files: [skills/incoming/44-quantitative-analysis.md, skills/incoming/53-walk-forward-and-validation.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/48-adaptive-systems.md, skills/incoming/53-walk-forward-and-validation.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+  - {files: [skills/incoming/29-financial-mathematics.md, skills/incoming/61-system-psychology.md],
+     relationship: related_but_distinct, action: no_action, resolved: true}
+  - {files: [skills/incoming/57-market-microstructure.md, skills/incoming/63-hypothesis-and-formula-engineering.md],
+     relationship: complementary, action: dependency_relationship, resolved: true}
+
+unverified_claims:
+  - {skill: mathematical-foundation, claim: division by zero returns math.inf/math.nan (not a runtime error),
+     status: unverified, evidence: official Operators page silent on runtime results; constant
+     zero-division is compile-time error; community evidence indicates runtime na;
+     handling: preserved verbatim, proposed interpretation recorded separately,
+     guard-denominator rule unconditional}
+
+current_batch: batch-008 (FINAL — library complete)
+total_processed: 77
+total_pending: 0

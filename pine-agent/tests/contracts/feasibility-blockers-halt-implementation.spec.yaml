@@ -1,0 +1,32 @@
+# TEST SPEC — Contracts: feasibility blockers halt Implementation (case 6)
+spec_id: TEST-CONTRACTS-001
+category: contracts
+status: specified            # specification only; executable harness is a future phase
+requirement: >
+  Implementation must be blocked when the feasibility contract contains any
+  entry in its blockers list (config/feasibility.yaml: block-severity check
+  failed), regardless of other contracts' state.
+
+preconditions:
+  - "A formalization contract exists with implementation_allowed: true."
+  - "A pre-verification contract exists with status: passed and blockers: []."
+  - "A feasibility contract exists where at least one block-severity check
+     failed (e.g., required_data_available: false — requested data does not
+     exist on TradingView), producing blockers: [{ id, check_id, reason }]."
+
+steps:
+  - "Present all three contracts at the Implementation gate."
+  - "Attempt to enter Implementation Planning / Implementation."
+  - "Inspect pipeline state and the implementation contract."
+
+expected:
+  - "Implementation contract status == blocked (never reaches in_progress/completed)."
+  - "The blocker references the failing feasibility check_id."
+  - "The user sees the feasibility blocker reason (e.g., data unavailable) and the recommendation field."
+  - "No code artifact is produced."
+  - "Pipeline remains halted until feasibility blockers are cleared (redesign or user decision)."
+
+must_not:
+  - "Warnings in the feasibility contract must NOT block on their own (warnings are surfaced, non-blocking)."
+  - "The agent must NOT implement a degraded/fallback version without user consent."
+  - "Implementation must NOT proceed on the strength of formalization + pre-verification alone."

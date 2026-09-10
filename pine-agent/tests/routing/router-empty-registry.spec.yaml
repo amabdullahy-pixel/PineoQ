@@ -1,0 +1,29 @@
+# TEST SPEC — Router: controlled failure on empty registry (case 1)
+spec_id: TEST-ROUTING-001
+category: routing
+status: specified            # specification only; executable harness is a future phase
+requirement: "The Router must fail in a controlled manner when skills/registry.yaml is empty (skills: [])."
+
+preconditions:
+  - "skills/registry.yaml exists and contains exactly `skills: []` (current scaffold state)."
+  - "A valid user request is provided (any request_class)."
+
+steps:
+  - "Run the Router on the request."
+  - "Router reads skills/registry.yaml."
+  - "Registry contains zero Skills."
+
+expected:
+  - "routing.status == blocked"
+  - "routing.selected_skills == []"
+  - "routing.dependency_skills == []"
+  - "routing.excluded_skills == []"
+  - "A machine-readable reason is recorded: registry contains no Skills."
+  - "The pipeline STOPS before Formalization — no formalization contract is created."
+  - "The user is informed: import Skills, or explicitly consent to proceed skill-less."
+  - "NO fallback behavior loads anything outside the registry (no bulk load, no synthetic Skills)."
+
+must_not:
+  - "The Router must NOT proceed to Formalization."
+  - "The Router must NOT fabricate or auto-create Skills."
+  - "The Router must NOT report status routed/pending on an empty registry."
