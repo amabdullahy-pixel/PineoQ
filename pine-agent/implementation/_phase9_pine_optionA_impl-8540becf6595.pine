@@ -50,9 +50,5 @@ else
 // Wires M-STATE -> M-SIGNAL; honors E-NA, E-FIRST, pine_version_target=6
 // Target: //@version=6 (v6 only, no v5/v4 syntax)
 // Integration point: all module outputs converge here
-// Authorized platform-compatibility amendment (user decision, Option A):
-// minimal neutral output to satisfy TradingView's mandatory indicator-output
-// rule; no visible plot, no alerts, no semantic change to C-1/E-NA/E-FIRST
-plot(signal_c1 ? 1 : 0, display=display.none)
 
 

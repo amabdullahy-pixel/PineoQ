@@ -1064,3 +1064,262 @@ Chronological, append-only. Never rewrite or delete historical entries.
   `_regen_result.py`, `_stage01.pl`, `_debug_check.py`, `_test_write.pl`,
   `_p8.pl`, `_t_*.yaml`) preserved as recovery evidence (no destructive
   cleanup; removal intentionally out of scope).
+
+---
+
+## 1.8.0 - PHASE 10: Post-Verification Complete (2026-09-10)
+
+**Date:** 2026-09-10
+**Status:** post-verification-stage
+
+### Added
+
+- `verification/phase10_post_verification_result.yaml` — the authoritative
+  Phase 10 result (schema v1.0), generated verification-only against the
+  Phase 9 artifact `implementation/phase9_pine.pine`
+  (sha256 `47ffa7a5...26d`, unchanged).
+
+### Verified (Phase 10 evidence)
+
+- **Entry gate (PV01):** Phase 9.5 gate READY_FOR_PHASE_10_WITH_WARNINGS
+  (gate OPEN); Phase 9 COMPLETED, implementation_allowed true, zero
+  blockers upstream; entry authorized.
+- **Identity (PV02):** full chain req-aaaaaaaaaaaa → rout-bbbbbbbbbbbb →
+  form-cccccccccccc → pre-111111111111 → feas-98e17d876f2d →
+  plan-12da8ec79f76 → impl-31ffd64d8c54 re-verified against disk;
+  source/plan/result hashes recomputed and recorded in the result;
+  post_verification_id post-dcc8a5bdd4b3 derived deterministically
+  (no timestamp/random/env input).
+- **Traceability (PV03):** C-1 → M-STATE/M-SIGNAL → Pine lines 17-25/36-40;
+  E-NA → M-STATE lines 24-25; E-FIRST → M-INTEG; no orphan requirement,
+  no orphan module; plan sections (MTF/drawing/alert/performance) empty in
+  both plan and artifact.
+- **Static verification (PV04-PV15):** `//@version=6` first line;
+  three modules in plan order; no duplicate declarations, placeholders,
+  or undeclared identifiers; C-1 implemented verbatim as
+  `close > 30 and close[1] <= 30` with exact threshold inclusivity
+  (30-touch is not a cross); bounded relative offset `[1]` only;
+  construct scan: zero request.*, plot, drawing, alert, varip, barstate,
+  pivot, lookahead constructs; resource budgets recorded at actual counts
+  (request_calls 0, plot_count 0, drawing_objects 0).
+- **Determinism (PV18):** implement.pl re-executed on the authoritative
+  plan across 3 fresh processes — byte-identical result and Pine output,
+  matching the committed artifact.
+
+### Warnings (carried forward / recorded)
+
+- W-001 (carried from Phase 9.5): TEST_HARNESS_DEFECT at
+  `implement.pl:471` (hardcoded developer-machine path in the selftest
+  fixture loader). Baseline defect; not repaired in Phase 10; verified
+  non-invalidating (CLI `--plan` mode exit 0; fresh output byte-identical
+  to the stored Phase 9 result).
+- W-002 (new, low): `var bool state_crossover = na` is assigned only in
+  runtime if-branches; bar-one behavior depends on compiled Pine var
+  initialization semantics (S-type one-shot vs R-type re-init). Static
+  analysis cannot decide it; carried as UNKNOWN pending runtime evidence.
+- W-003 (carried): upstream per-request contracts exist via scratch
+  fixtures plus authoritative plan/result; used as-is.
+- W-004 (carried): TradingView compilation remains
+  UNKNOWN_REQUIRES_EXTERNAL_VALIDATION.
+
+### Status & verdict
+
+- `status: passed` (no blockers; verification complete within available
+  evidence), `verdict: needs_user_compile`, final gate
+  NEEDS_USER_VALIDATION.
+- External validation required: TradingView Pine v6 compile; runtime
+  confirmation of C-1 firing (incl. 30-touch non-trigger); runtime
+  confirmation of bar-one state behavior (W-002); chart load check.
+- No Phase 1–9 artifact modified; Phase 9.5 warnings preserved unchanged;
+  no repair performed (finding routing: none — no implementation defect
+  found; compile/runtime confirmation routed to the user).
+
+---
+
+## 1.8.1 - PHASE 10 REV 2: TradingView Compile FAIL — Rollback Issued (2026-09-10)
+
+**Date:** 2026-09-10
+**Status:** post-verification-stage (REV 2 — rollback_to_implementation)
+
+### Compiler evidence (user-reported, actual TradingView run)
+
+- `phase9_pine.pine` → **Error at 17:1**: Cannot assign a value of the
+  `simple na` type to the `state_crossover` variable. The variable is
+  declared with the `const bool` type.
+- Compilation status upgraded from UNKNOWN to **VERIFIED FAIL**
+  (error-text sha256 `21236caa…798c` recorded; artifact at failure
+  `47ffa7a5…26d`, unchanged).
+
+### Result revision
+
+- `verification/phase10_post_verification_result.yaml` REV 2:
+  `status: failed`, `verdict: rollback_to_implementation`,
+  `final_gate: CLOSED_ROLLBACK`, `verification_id: post-eab3f761b88a`
+  (content-addressed incl. the verbatim compiler error).
+- Blocker **B-001** (PV16): the Phase 9 engine's generated initialization
+  idiom `var bool x = na` is rejected by the Pine v6 compiler
+  (type/qualifier mismatch). Same idiom pattern present at line 25
+  (E-NA branch).
+- W-002 (REV 1 var-semantics UNKNOWN) folded into B-001 — the runtime
+  question cannot arise until a compiling artifact exists. W-004
+  (compile UNKNOWN) upgraded to VERIFIED-FAIL with evidence.
+- REV 1 record preserved (static verification results remain valid;
+  that verdict correctly refused to claim compile PASS).
+
+### Rollback routing (no repair performed here)
+
+- **Responsible stage: PHASE 9 Implementation** — the defect originates
+  in `implement.pl` code-generation templates, not in upstream contract
+  content. Phase 9 must fix the generated-initialization idiom, regenerate
+  through the Stage 02–10 gates, and re-issue implementation outputs;
+  Phase 10 then re-executes in full (REV 3) with fresh compile evidence.
+- No Phase 1–9 artifact modified by Phase 10; hash sweep confirms
+  300/300 baseline-identical plus this bookkeeping.
+
+---
+
+## 1.9.0 - PHASE 9 REPAIR: bool/na Generation Defect Fixed + Regeneration (2026-09-10)
+
+**Date:** 2026-09-10
+**Status:** implementation-stage (repair complete → READY_FOR_POST_VERIFICATION pending Phase 10 REV 3)
+
+### Root cause (generator-level, confirmed)
+
+- `implement.pl` → `build_module_source()`, M-STATE branch (declaration +
+  E-NA assignment) and M-SIGNAL branch (na() guards) generated idioms that
+  Pine v6 rejects: per the official v6 migration guide, **"bool" values can
+  no longer be `na`, and `na()`, `nz()`, `fixnan()` no longer accept bool
+  arguments**. The Phase 10 REV 2 TradingView compile FAIL at 17:1
+  (`var bool state_crossover = na`) is the verified instance of this class.
+
+### Fixed (Phase 9 generator only — no immutable artifact touched)
+
+- `build_module_source()` M-STATE: `var bool state_crossover = false`
+  (typed init); warm-up suppression preserved via availability guard
+  `if na(close) or na(close[1]) → state := false` (float-operand `na()` —
+  legal in v6); crossover evaluation `close > 30 and close[1] <= 30`
+  **verbatim and unchanged** in the else branch; `:= na` eliminated.
+- `build_module_source()` M-SIGNAL: `if not na(close) and not na(close[1])`
+  availability guard replaces the illegal `not na(state_crossover)`;
+  `signal_c1` logic unchanged.
+- `static_checks()` (S08): added defect-class detector — blockers
+  S-BOOL-NA-INIT / S-BOOL-NA-ASSIGN / S-BOOL-NA-CALL fire on any generated
+  `var bool x = na`, `<bool> := na`, or `na(<bool>)`, so this class can never
+  silently regenerate.
+- The hardcoded selftest path (W-001, Phase 9.5) remains untouched by this
+  repair (known baseline defect, out of scope).
+
+### Regeneration & validation
+
+- Regenerated via the repaired engine (`--plan phase9_authoritative_plan.yaml`):
+  exit 0, `COMPLETED`, zero findings/warnings/blockers; new S08 detector
+  passes clean.
+- **Diff classified:** every changed line belongs to the defect class;
+  C-1 expression byte-identical (relocated into else-branch); module
+  structure, header, indicator(), M-INTEG, precedence comments unchanged;
+  zero unrelated drift.
+- New identity (content-addressed): **implementation_id
+  `impl-8540becf6595`**, source_sha256 `0d0064b6...f12f`.
+  Previous `impl-31ffd64d8c54` (source `47ffa7a5...26d`) preserved as
+  historical evidence: `_phase9_pine_failed_impl-31ffd64d8c54.pine` +
+  `_phase9_result_failed_impl-31ffd64d8c54.yaml` (hash-verified copies).
+- Determinism: 3 fresh engine runs → byte-identical Pine + result;
+  artifact matches recorded hashes (R-008/R-009).
+- Selftest: 10/10 green (via scratch-copy harness accommodation — W-001
+  path defect; CLI runs unaffected).
+- Compile status: **UNKNOWN_REQUIRES_EXTERNAL_VALIDATION** — the repaired
+  artifact is NEW; the old FAIL evidence does not carry over; fresh
+  TradingView compile required (Phase 10 REV 3).
+- Regressions: upstream engines untouched (hash-verified); all Phase 1–8
+  artifacts byte-identical to baseline; Phase 10 result file untouched.
+
+---
+
+## 1.9.1 - PHASE 9 Amendment: Authorized Neutral Output Construct (Option A) (2026-09-10)
+
+**Date:** 2026-09-10
+**Status:** implementation-stage (amendment complete; awaiting Phase 10 REV 4 fresh compile)
+
+### Authorization
+
+- **USER DECISION — OPTION A (explicit, 2026-09-10):** the implementation
+  must remain signal-only from the user's perspective; a minimal neutral
+  output construct is authorized solely to satisfy TradingView's mandatory
+  indicator-output rule (Phase 10 REV 3 blocker B-002).
+
+### Fixed (generator level — no plan or upstream artifact touched)
+
+- `implement.pl` `build_module_source()` M-INTEG branch emits one neutral
+  construct with provenance comments:
+  `plot(signal_c1 ? 1 : 0, display=display.none)` — display.none renders
+  nothing on the chart; no alertcondition; no visible output; no C-1/
+  E-NA/E-FIRST change; no architecture change; the original Phase-8 plan
+  remains byte-untouched (amendment recorded at implementation level).
+
+### Regeneration & validation
+
+- Regenerated via the engine: exit 0, COMPLETED, zero findings/warnings/
+  blockers; **new implementation_id `impl-f56a05897f87`**, source sha256
+  `d62af444...16e4` (content-addressed).
+- Diff vs impl-8540becf6595: exactly the 4-line amendment block — nothing
+  else. C-1 expression verbatim (R-004); E-NA/E-FIRST unchanged (R-005);
+  no unrelated `na` behavior (R-006); zero bool/na defect-class constructs
+  (R-007); determinism x3 byte-identical (R-008); artifact/result match
+  recorded hashes (R-009); selftest 10/10.
+- Historical evidence preserved (immutable):
+  `impl-31ffd64d8c54` (REV 2 FAIL) → `_phase9_pine_failed_impl-31ffd64d8c54.*`;
+  `impl-8540becf6595` (REV 3 FAIL) → `_phase9_pine_optionA_impl-8540becf6595.*`;
+  Phase 10 REV 1/2/3 records preserved in the result file + git history.
+- Compile status: UNKNOWN_REQUIRES_EXTERNAL_VALIDATION — **REV 4 must be a
+  completely fresh TradingView compile of impl-f56a05897f87** (deliberately
+  not executed within this amendment task; the Phase 10 boundary holds).
+- Phase 10 result file updated with the amendment record (REV 3 history
+  preserved; verdict AWAITING_REV4_FRESH_COMPILE).
+
+## 2.0.0 - PHASE 10 REV 4: TradingView Compile VERIFIED PASS - Pipeline Complete (2026-09-10)
+
+**Date:** 2026-09-10
+**Status:** post-verification-stage (REV 4: validated; final gate OPEN)
+
+### Fresh compile evidence (REV 4 — nothing inherited from prior runs)
+
+- User pasted the current authoritative artifact `implementation/phase9_pine.pine`
+  (`impl-f56a05897f87`, source sha256 `d62af444...16e4`) into the TradingView
+  Pine Editor and reported verbatim: **"Compiled. Updated on chart."**
+  (evidence sha256 `fdacaf10...54bf`). VERIFIED PASS by an actual TradingView
+  Pine v6 compiler.
+- "Updated on chart." additionally confirms runtime initialization: the script
+  executed on the chart with no runtime error.
+
+### Schema outcome (verification/post_contract_schema.yaml v1.0)
+
+- `syntax`/`type_system`/`scope`: **pass** (compiler-verified).
+- Blockers: **zero** — B-001 (bool/na, resolved by the Phase 9 repair) and
+  B-002 (missing output construct, resolved by the authorized Option A
+  amendment) closed with evidence in `resolved_blockers`.
+- `status: passed` · `verdict: validated` — the schema gate rule "verdict:
+  validated requires user-reported TradingView compile confirmation" is now
+  satisfied.
+- `final_gate: OPEN` — successor `release_or_rollback` (user decision).
+- New content-addressed identity: **`post-918536e1e7d8`** =
+  sha256(identity_chain | source_sha256 | plan_sha256 | evidence_sha256)[:12]
+  (deterministic; no timestamp/random/process/env input).
+
+### Honest evidence boundaries (W-005, non-blocking)
+
+- Verified: compile PASS + runtime initialization (chart load, no runtime
+  error) + verbatim condition equivalence (C-1 = `close > 30 and close[1] <= 30`).
+- NOT observed (recorded as W-005, optional external validation): bar-by-bar
+  firing pattern of C-1 (fires exactly on cross-over closes, never on the
+  30-touch case; E-NA/E-FIRST suppression). The signal is invisible by Option A
+  design (`display=display.none`); direct observation would require an
+  authorized visible/Data-Window construct and is NOT added without user
+  authorization.
+
+### Integrity
+
+- Phase 1–8 artifacts and the authoritative plan: untouched.
+- Historical chain preserved (immutable): impl-31ffd64d8c54 (REV 2 FAIL),
+  impl-8540becf6595 (REV 3 FAIL), Phase 10 REV 1/2/3 records.
+- Resource budgets (actual): request_calls 0, plot_count 1 (the authorized
+  neutral construct), drawing_objects 0.

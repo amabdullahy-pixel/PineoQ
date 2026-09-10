@@ -1,0 +1,170 @@
+# ============================================================================
+# PHASE 10 RESULT — POST-VERIFICATION (schema v1.0: verification/post_contract_schema.yaml)
+# ============================================================================
+# REV 4 (2026-09-10) — FRESH TRADINGVIEW COMPILE EVIDENCE RECEIVED (user-reported):
+#   Artifact: implementation/phase9_pine.pine = impl-f56a05897f87
+#   (source sha256 d62af444ecd96dd815e7ef24e1883a0d0b32db5255cce8eb1d559512586316e4)
+#   User-reported compiler result (verbatim):
+#     Compiled.
+#     Updated on chart.
+#   Evidence sha256: fdacaf100bf9d769f27cd66b3f60208f348c8bc849e6490c0bf2093c8e1154bf
+#   This is VERIFIED PASS by an actual TradingView Pine v6 compiler — fresh,
+#   independent evidence for the NEW artifact; nothing inherited from any
+#   prior compile. "Updated on chart." additionally confirms runtime
+#   initialization: the script executed on the chart with no runtime error.
+# REV 4 IDENTITY DERIVATION (content-addressed, deterministic — no timestamp/
+#   random/process/env input):
+#   evidence_sha256 = sha256("Compiled.\nUpdated on chart.")
+#                 = fdacaf100bf9d769f27cd66b3f60208f348c8bc849e6490c0bf2093c8e1154bf
+#   body = identity_chain | source_sha256 | plan_sha256 | evidence_sha256
+#   verification_id = "post-" + first 12 hex of sha256(body) = post-918536e1e7d8
+# ============================================================================
+# AMENDMENT RECORD — 2026-09-10 (post-REV 3). B-002 RESOLUTION (CLOSED BY REV 4):
+# The user exercised OPTION A (explicit authorization): signal-only from
+# the user's perspective; the generator received a minimal neutral output
+# construct to satisfy TradingView's mandatory indicator-output rule:
+#   plot(signal_c1 ? 1 : 0, display=display.none)
+# REV 4 compile PASS confirms the amendment satisfied the platform rule with
+# zero visible output and zero semantic change to C-1/E-NA/E-FIRST.
+# Historical chain preserved (immutable): impl-31ffd64d8c54 (REV 2 FAIL),
+# impl-8540becf6595 (REV 3 FAIL, archived as _phase9_pine_optionA_*),
+# Phase 10 REV 1/2/3 records in this file's history and git history.
+# ============================================================================
+# REV 3 RECORD (preserved, not erased):
+#   vs REPAIRED artifact impl-8540becf6595 (source 0d0064b6...f12f):
+#   "An indicator must contain at least one of the following: any plot*()
+#   function, barcolor(), bgcolor(), hline(), alertcondition(), or any
+#   drawing" (error sha256 335844e3...8f97) => B-002, status failed,
+#   id post-be99516a4b30. Platform structural rule unmet by the approved
+#   plan (drawing/alert architecture empty) — resolved via user Option A
+#   authorization; RESOLVED BY REV 4 COMPILE PASS.
+# REV 2 RECORD (preserved): 17:1 simple-na/const-bool FAIL vs OLD artifact
+#   impl-31ffd64d8c54 (sha256 21236caa...798c) => B-001,
+#   rollback_to_implementation, id post-eab3f761b88a. Repair CONFIRMED
+#   EFFECTIVE by the REV 3 run (type error gone); REV 4 PASS confirms final.
+# REV 1 RECORD (preserved): static verification PASSED; verdict
+#   needs_user_compile; id post-dcc8a5bdd4b3.
+# ============================================================================
+
+schema_version: "1.0"
+stage: post_verification
+predecessor: implementation
+successor: release_or_rollback
+
+post_verification:
+  # --- Identity -----------------------------------------------------------------
+  request_id: 'req-aaaaaaaaaaaa'
+  approved_routing_id: 'rout-bbbbbbbbbbbb'
+  formalization_id: 'form-cccccccccccc'
+  verification_id: 'post-918536e1e7d8'        # REV 4: sha256(chain|source|plan|evidence)[:12], evidence = verbatim compiler PASS text; REV 3 post-be99516a4b30; REV 2 post-eab3f761b88a; REV 1 post-dcc8a5bdd4b3
+  implementation_id: 'impl-31ffd64d8c54'      # historical chain head (original); artifact under verification below
+  planning_id: 'plan-12da8ec79f76'
+  feasibility_id: 'feas-98e17d876f2d'
+  pre_verification_id: 'pre-111111111111'
+
+  # --- Static artifact checks ------------------------------------------------------
+  syntax: pass                                # VERIFIED BY ACTUAL TRADINGVIEW COMPILER — REV 4, user-reported: "Compiled." (fresh, independent evidence for impl-f56a05897f87)
+  type_system: pass                           # compiler accepted every type/qualifier relationship (bool/na defect class absent; zero-defect scan on artifact = 0 hits) — compiler-verified
+  scope: pass                                 # compile success + chart load: no use-before-declaration/scope violations — compiler-verified
+
+  # --- Behavioral checks ---------------------------------------------------------------
+  runtime_behavior: 'INITIALIZATION VERIFIED — "Updated on chart." (user-reported) confirms the script executed on the chart with no runtime error; bar-by-bar signal-firing semantics remain UNKNOWN_REQUIRES_EXTERNAL_VALIDATION (the Option A construct is display.none: invisible by explicit user decision; observation possible only via an authorized future construct)'   # honest split: no runtime error at load ≠ signal-pattern observation
+  signal_equivalence: statically_reviewed     # C-1 'close crosses over 30' verbatim as close > 30 and close[1] <= 30 (compile PASS confirms it is valid Pine; behavioral firing pattern noted under runtime_behavior)
+  edge_cases_runtime: 'bar-one/warm-up paths executed at chart load without runtime error (user-reported); na-suppression firing pattern UNKNOWN_REQUIRES_EXTERNAL_VALIDATION (invisible by Option A design)'
+
+  # --- Risk & resource checks ---------------------------------------------------------------
+  repainting:
+    classification: 'low — mechanism: no repaint mechanism detected in the request'   # mirrored verbatim; compile PASS changes nothing
+    mechanism: 'none detected: no request.*, no pivot*, no future references, no varip, no barstate, no lookahead, no offsets, no drawings; the sole plot is a signal-derived constant with display.none (adds no repaint mechanism)'
+    lookahead_policy_explicit: true
+    matches_classification: true
+  mtf_behavior: NOT_APPLICABLE                # zero request.* constructs; plan mtf_architecture: []
+  performance: statically_reviewed            # O(1) per bar; constant state; no loops/arrays; compile + load confirm no resource error at initialization
+  resource_budgets:
+    request_calls: 0
+    plot_count: 1                             # actual count: the single authorized Option A neutral construct (display.none)
+    drawing_objects: 0
+
+  alert_behavior: NOT_APPLICABLE              # zero alert constructs; plan alert_architecture: []
+
+  # --- Findings & status ---------------------------------------------------------------------------
+  blockers: []                                # B-001 and B-002 RESOLVED with evidence (see resolved_blockers); schema rule: any entry here => failed — entry set is empty
+  resolved_blockers:                          # evidence fields only (disclosed addition); NOT part of blockers[]
+    - id: B-001
+      check_id: PV16
+      resolved_by: 'Phase 9 generator repair (bool/na defect class per official v6 migration guide) + REV 3/REV 4 compile evidence: the 17:1 type error no longer occurs on impl-8540becf6595 and impl-f56a05897f87'
+    - id: B-002
+      check_id: PV16
+      resolved_by: 'User Option A authorized amendment (neutral plot, display=display.none) + REV 4 compile PASS of impl-f56a05897f87: platform indicator-output rule satisfied with zero visible output'
+  warnings:
+    - id: W-001
+      severity: low
+      source: phase9.5
+      check_id: PV19
+      reason: 'KNOWN WARNING carried forward (Phase 9.5 Warning A): TEST_HARNESS_DEFECT — implementation/implement.pl:471 hardcodes a developer-machine path. Baseline defect; NOT repaired; verified non-invalidating (CLI --plan mode exit 0; fresh output byte-identical to stored Phase 9 result).'
+    - id: W-002
+      severity: info
+      source: phase10_static
+      check_id: PV19
+      reason: 'RESOLVED WITH EVIDENCE: REV 1 flagged var one-shot initialization semantics as UNKNOWN pending runtime. REV 4 "Updated on chart." confirms the initialization executed on chart load without runtime error; the deep bar-by-bar observation remains covered by W-005 (non-blocking).'
+    - id: W-003
+      severity: low
+      source: phase9.5
+      check_id: PV19
+      reason: 'KNOWN WARNING carried forward (Phase 9.5 Warning B): upstream per-request contracts exist via scratch fixtures plus authoritative plan/result; used exactly as they exist.'
+    - id: W-004
+      severity: info
+      source: phase9.5
+      check_id: PV19
+      reason: 'RESOLVED WITH EVIDENCE (final): TradingView compilation is no longer UNKNOWN — REV 2 FAIL was repaired (Phase 9), and REV 4 fresh compile of impl-f56a05897f87 is VERIFIED PASS by the actual TradingView compiler (user-reported).'
+    - id: W-005
+      severity: low
+      source: phase10_rev4
+      check_id: PV17
+      reason: 'Non-blocking: bar-by-bar signal-firing behavior (C-1 fires exactly on cross-over closes, never on the 30-touch case; E-NA/E-FIRST suppression pattern) has not been observed at runtime — the Option A construct is display.none by explicit user decision, so the signal is invisible on the chart and in the Data Window. Compile PASS + runtime-initialization PASS + verbatim condition equivalence are the available evidence; direct behavioral observation remains an optional external validation (would require an authorized visible/Data-Window construct — NOT to be added without user authorization).'
+  status: passed                              # schema enum: pending | in_progress | passed | failed — zero blockers, compile VERIFIED PASS
+  verdict: validated                          # schema enum: validated | rollback_to_implementation | needs_user_compile — gate rule satisfied: "verdict: validated requires user-reported TradingView compile confirmation" (REV 4, user-reported)
+  final_gate: OPEN                            # successor: release_or_rollback — user decides release
+  # --- Evidence fields (disclosed additions; no competing schema terminology) ---
+  source_sha256: 'd62af444ecd96dd815e7ef24e1883a0d0b32db5255cce8eb1d559512586316e4'
+  plan_sha256: '391ba901545eeca635cd682d3a71faabbd3a3a33d812abce7112f1fb72f6bf1e'
+  result_sha256: '283ffbaa74ac9dfd33d6c7a9b469e077acdbeb80856e5f6c87ce59321af7d3c3'
+  implementation_id_under_verification: 'impl-f56a05897f87'
+  historical_artifacts:
+    - 'impl-31ffd64d8c54 (REV 2 FAIL) — implementation/_phase9_pine_failed_impl-31ffd64d8c54.pine + _phase9_result_failed_impl-31ffd64d8c54.yaml'
+    - 'impl-8540becf6595 (REV 3 FAIL) — implementation/_phase9_pine_optionA_impl-8540becf6595.pine + _phase9_result_optionA_impl-8540becf6595.yaml'
+  amendment_record:
+    authorization: 'USER DECISION — OPTION A (2026-09-10)'
+    construct: 'plot(signal_c1 ? 1 : 0, display=display.none)'
+    purpose: 'satisfy TradingView mandatory indicator-output rule only'
+    prohibited_and_avoided: 'no alertcondition, no visible plot/plotchar/barcolor/bgcolor/hline, no C-1/E-NA/E-FIRST change, no architecture change, plan untouched'
+    generator_patch: 'implementation/implement.pl build_module_source() M-INTEG branch'
+    confirmed_by: 'REV 4 compile PASS (user-reported "Compiled. Updated on chart.")'
+  phase9_5_gate: 'READY_FOR_PHASE_10_WITH_WARNINGS (PRE_PHASE_10_GATE = OPEN)'
+  compile_evidence:
+    verdict: 'VERIFIED BY ACTUAL TRADINGVIEW COMPILER: PASS (REV 4 — fresh, independent evidence for impl-f56a05897f87)'
+    reporter: 'user (external TradingView run)'
+    date: '2026-09-10'
+    result_verbatim: "Compiled.\nUpdated on chart."
+    evidence_sha256: 'fdacaf100bf9d769f27cd66b3f60208f348c8bc849e6490c0bf2093c8e1154bf'
+    artifact_source_sha256: 'd62af444ecd96dd815e7ef24e1883a0d0b32db5255cce8eb1d559512586316e4'
+    prior_rev3_evidence: 'missing-output-construct FAIL (sha256 335844e3...8f97) vs impl-8540becf6595 — RESOLVED by Option A amendment + REV 4 PASS'
+    prior_rev2_evidence: '17:1 simple-na/const-bool FAIL (sha256 21236caa...798c) vs OLD artifact impl-31ffd64d8c54 — RESOLVED by Phase 9 repair; type error gone from REV 3 onward'
+
+  # --- Static test matrix summary (REV 1 static results retained; compile dimension now VERIFIED PASS) ---
+  test_matrix:
+    - { test_id: TM-01, pv: 'PV05', requirement: 'C-1', expected: 'signal true iff close crosses over 30', observed: 'line 25: close > 30 and close[1] <= 30 — verbatim, exact inclusivity; compiles', verdict: 'STATIC_MATCH + COMPILE_VERIFIED' }
+    - { test_id: TM-02, pv: 'PV10', requirement: 'E-NA', expected: 'na close suppresses signal', observed: 'availability guards na(close) or na(close[1]) (float operands, legal v6); executed at chart load without runtime error', verdict: 'STATIC_MATCH + COMPILE_VERIFIED' }
+    - { test_id: TM-03, pv: 'PV06/PV07', requirement: 'E-FIRST', expected: 'first bar: no signal', observed: 'bar-one logic present; bar-one path executed at chart load without runtime error', verdict: 'STATIC_MATCH + COMPILE_VERIFIED' }
+    - { test_id: TM-04, pv: 'PV08/PV13', requirement: '—', observed: 'zero request.*/alert constructs', verdict: 'NOT_APPLICABLE' }
+    - { test_id: TM-05, pv: 'PV09', requirement: 'repaint classification', observed: 'no repaint-capable construct; bounded relative offset [1] only; sole plot is signal-derived display.none', verdict: 'STATIC_MATCH' }
+    - { test_id: TM-06, pv: 'PV15', requirement: '—', observed: 'request_calls=0, plot_count=1 (authorized neutral construct), drawing_objects=0, O(1)/bar; no resource error at load', verdict: 'STATIC_SAFE + LOAD_VERIFIED' }
+    - { test_id: TM-07, pv: 'PV16', requirement: 'Pine v6 compilability', setup: 'user pasted authoritative artifact impl-f56a05897f87 into TradingView Pine Editor (fresh run, nothing inherited)', expected: 'compile success', observed: 'user-reported: "Compiled." — VERIFIED PASS', verdict: 'PASS_VERIFIED_BY_ACTUAL_COMPILER' }
+    - { test_id: TM-08, pv: 'PV12/PV13', requirement: 'platform structural rule', expected: 'indicator declares >=1 output construct', observed: 'exactly one neutral construct plot(..., display=display.none); chart updated with no visible output', verdict: 'PASS_VERIFIED_BY_ACTUAL_COMPILER' }
+    - { test_id: TM-09, pv: 'PV17', requirement: 'runtime initialization', expected: 'indicator loads and executes without runtime error', observed: 'user-reported: "Updated on chart." — script executed on chart', verdict: 'PASS_INITIALIZATION_VERIFIED' }
+
+  external_validation_requirements:
+    - 'OPTIONAL (non-blocking, W-005): bar-by-bar behavioral observation of C-1 firing pattern (fires exactly on cross-over closes, never on 30-touch; E-NA/E-FIRST suppression). The signal is invisible by Option A design; observation would require an authorized visible/Data-Window construct — request only if the user wants it.'
+    - 'None required for the validated verdict: compile confirmation (user-reported) and runtime initialization (chart load) are on record per the post_contract_schema gate rules.'
+
+  notes: 'REV 4 final: fresh user-reported TradingView compile of impl-f56a05897f87 = PASS ("Compiled. Updated on chart." — evidence sha256 fdacaf10...54bf); zero blockers (B-001/B-002 resolved with evidence); verdict validated per schema gate rule; final gate OPEN (successor release_or_rollback). W-005 records the non-blocking behavioral-observation unknown honestly. Phase 1-8 artifacts untouched throughout; plan byte-untouched; full REV 1/2/3/4 history preserved in this file and git history.'

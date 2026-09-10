@@ -178,22 +178,22 @@ sub build_module_source {
     if ($mid eq 'M-STATE') {
         push @lines, "// Category: STATE - per-bar prior-value / crossover mechanics";
         push @lines, "// Contract condition (verbatim): close crosses over 30";
-        push @lines, "var bool state_crossover = na";
+        push @lines, "// Pine v6: bool cannot be na (official migration guide); warm-up tracked via close availability";
+        push @lines, "var bool state_crossover = false";
         push @lines, "// Initialize on first available bar; one logical update per confirmed bar";
-        push @lines, "if not na(state_crossover)";
-        push @lines, "    state_crossover := close > 30 and close[1] <= 30";
-        push @lines, "else";
+        push @lines, "// Edge case E-NA: na values during warm-up keep the state inactive (no signal)";
+        push @lines, "// Edge case E-FIRST: first bar has no previous close, so the state stays inactive";
+        push @lines, "if na(close) or na(close[1])";
         push @lines, "    state_crossover := false";
-        push @lines, "// Edge case E-NA: na values during warm-up - state stays na until close is available";
-        push @lines, "if na(close)";
-        push @lines, "    state_crossover := na";
+        push @lines, "else";
+        push @lines, "    state_crossover := close > 30 and close[1] <= 30";
     }
     elsif ($mid eq 'M-SIGNAL') {
         push @lines, "// Category: SIGNAL - condition evaluation preserving the exact formalized clause";
         push @lines, "// Condition C-1 (verbatim): close crosses over 30";
         push @lines, "// Prerequisites: M-STATE";
         push @lines, "bool signal_c1 = false";
-        push @lines, "if not na(state_crossover)";
+        push @lines, "if not na(close) and not na(close[1])";
         push @lines, "    signal_c1 := state_crossover";
         push @lines, "else";
         push @lines, "    signal_c1 := false";
@@ -204,6 +204,10 @@ sub build_module_source {
         push @lines, "// Wires M-STATE -> M-SIGNAL; honors E-NA, E-FIRST, pine_version_target=6";
         push @lines, q{// Target: //@version=6 (v6 only, no v5/v4 syntax)};
         push @lines, "// Integration point: all module outputs converge here";
+        push @lines, "// Authorized platform-compatibility amendment (user decision, Option A):";
+        push @lines, "// minimal neutral output to satisfy TradingView's mandatory indicator-output";
+        push @lines, "// rule; no visible plot, no alerts, no semantic change to C-1/E-NA/E-FIRST";
+        push @lines, "plot(signal_c1 ? 1 : 0, display=display.none)";
     }
     else {
         push @lines, "// UNKNOWN MODULE - no source requirements matched";
@@ -260,6 +264,26 @@ sub static_checks {
     for my $l (@lines) {
         if ($l =~ /debug|test/i && $l =~ /\b(plot|plotshape|label|line|box)\b/) {
             $add->('warning','S-DEBUG',"possible debug artifact");
+        }
+    }
+    # Defect-class scan (Phase 9 repair, Phase 10 B-001): Pine v6 forbids
+    # bool/na idioms - bool can no longer be na and na()/nz()/fixnan() no
+    # longer accept bool arguments (official v6 migration guide).
+    my %boolvars;
+    for my $l (@lines) {
+        $boolvars{$1} = 1 if $l =~ /^\s*(?:var\s+)?bool\s+(\w+)\s*[=:]/;
+    }
+    for my $l (@lines) {
+        if ($l =~ /^\s*var\s+bool\s+\w+\s*=\s*na\b/) {
+            $add->('blocker','S-BOOL-NA-INIT','invalid Pine v6 idiom: bool declared with na initializer (bool cannot be na)');
+        }
+        for my $bv (keys %boolvars) {
+            if ($l =~ /^\s*\Q$bv\E\s*:=\s*na\b/) {
+                $add->('blocker','S-BOOL-NA-ASSIGN',"invalid Pine v6 idiom: na assigned to bool '$bv' (bool cannot be na)");
+            }
+            if ($l =~ /\bna\(\s*\Q$bv\E\s*\)/) {
+                $add->('blocker','S-BOOL-NA-CALL',"invalid Pine v6 idiom: na() applied to bool '$bv' (na() rejects bool arguments in v6)");
+            }
         }
     }
     return \@issues;

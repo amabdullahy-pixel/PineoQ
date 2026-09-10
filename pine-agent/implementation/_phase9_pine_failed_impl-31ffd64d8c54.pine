@@ -14,15 +14,15 @@ indicator("Phase9-plan-12da8ec79f76", overlay=true, max_labels_count=500, max_ba
 // verification_requirements: logic_valid, edge_cases_checked, repaint_risk_classified
 // Category: STATE - per-bar prior-value / crossover mechanics
 // Contract condition (verbatim): close crosses over 30
-// Pine v6: bool cannot be na (official migration guide); warm-up tracked via close availability
-var bool state_crossover = false
+var bool state_crossover = na
 // Initialize on first available bar; one logical update per confirmed bar
-// Edge case E-NA: na values during warm-up keep the state inactive (no signal)
-// Edge case E-FIRST: first bar has no previous close, so the state stays inactive
-if na(close) or na(close[1])
-    state_crossover := false
-else
+if not na(state_crossover)
     state_crossover := close > 30 and close[1] <= 30
+else
+    state_crossover := false
+// Edge case E-NA: na values during warm-up - state stays na until close is available
+if na(close)
+    state_crossover := na
 
 
 // === MODULE M-SIGNAL ===
@@ -34,7 +34,7 @@ else
 // Condition C-1 (verbatim): close crosses over 30
 // Prerequisites: M-STATE
 bool signal_c1 = false
-if not na(close) and not na(close[1])
+if not na(state_crossover)
     signal_c1 := state_crossover
 else
     signal_c1 := false
@@ -50,9 +50,5 @@ else
 // Wires M-STATE -> M-SIGNAL; honors E-NA, E-FIRST, pine_version_target=6
 // Target: //@version=6 (v6 only, no v5/v4 syntax)
 // Integration point: all module outputs converge here
-// Authorized platform-compatibility amendment (user decision, Option A):
-// minimal neutral output to satisfy TradingView's mandatory indicator-output
-// rule; no visible plot, no alerts, no semantic change to C-1/E-NA/E-FIRST
-plot(signal_c1 ? 1 : 0, display=display.none)
 
 
