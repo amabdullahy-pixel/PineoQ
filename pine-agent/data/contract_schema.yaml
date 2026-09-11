@@ -1,0 +1,153 @@
+# ==============================================================================
+# pine-agent — PHASE 12: Market Data Acquisition & Alignment — contract schema
+# ==============================================================================
+# Narrative authority: meta/data_acquisition_alignment_procedure.md
+# Implementation:       data_acquisition/data_acquisition.pl
+#
+# Data is EVIDENCE, not truth: every dataset carries explicit provenance, and
+# unknowns stay unknown (load-bearing unknown rule). The engine answers only
+# "what data do we have, is it correctly aligned, and is it sufficient for
+# Phase 13 tracing?" — never "why did the signal fail?" (Phase 14).
+#
+# Identity chain (consumed verbatim, never reinterpreted):
+#   request -> routing -> formalization -> pre-verification -> feasibility
+#   -> planning -> implementation -> post-verification (post-918536e1e7d8,
+#   verdict validated) -> incident (Phase 11) -> data (Phase 12)
+# ==============================================================================
+
+schema_version: "1.0"
+stage: data_acquisition_and_alignment
+predecessor: incident_intake
+successor: execution_trace_and_debug
+
+# ----------------------------------------------------------------- identity --
+data_contract_id: data-<12 hex of sha256 over the canonical body>  # deterministic; no clock/random/env
+incident_id: 'incident-xxxxxxxxxxxx'                                # from Phase 11 (verbatim)
+implementation_id: 'impl-xxxxxxxxxxxx'                              # from Phase 11 / Phase 10 chain
+post_verification_id: 'post-xxxxxxxxxxxx'                           # Phase 10 REV 4
+phase11_status: 'READY|READY_WITH_WARNINGS'                         # gate inputs only
+
+# ------------------------------------------------------------------- target --
+target:
+  symbol:            # USER_PROVIDED or UNKNOWN
+  symbol_status:     # USER_PROVIDED | UNKNOWN
+  exchange:          # USER_PROVIDED | UNKNOWN
+  exchange_status:   # USER_PROVIDED | UNKNOWN
+  market_type:       # SPOT | FUTURES_PERPETUAL | CFD | SYNTHETIC_FEED | UNKNOWN
+  instrument_type:   # crypto | equity | forex | commodity | index | UNKNOWN
+  timeframe:         # incident timeframe; never silently converted
+  timeframe_status:  # USER_PROVIDED | UNKNOWN
+  timezone:          # source timezone; conversion only when source tz is known
+  timezone_status:   # USER_PROVIDED | UNKNOWN
+  session:           # REGULAR | EXTENDED | 24/7 | UNKNOWN
+
+# -------------------------------------------------------------- localization --
+# Incident localization → market-data bar mapping (prompt §19). EXACT only when
+# both the incident timestamp and a bar at that timestamp exist and identity
+# matches. Otherwise PROBABLE / APPROXIMATE / UNKNOWN — never fabricated.
+localization:
+  requested_timestamp:     # from Phase 11 (verbatim or UNKNOWN)
+  aligned_timestamp:       # normalized ts after recorded transformation
+  bar_index:               # UNKNOWN unless data proves it
+  alignment_status:        # EXACT | PROBABLE | APPROXIMATE | UNKNOWN
+  alignment_confidence:    # HIGH | MEDIUM | LOW | UNDETERMINED
+  mapping_basis:           # what establishes the mapping (verbatim provenance)
+
+# ------------------------------------------------------------------ sources --
+# Source trust model (prompt §8). authority: AUTHORITATIVE | QUALIFIED_EXTERNAL
+# | USER_PROVIDED | DERIVED | UNKNOWN. provenance: ACQUIRED | DERIVED |
+# NORMALIZED | ALIGNED | USER_PROVIDED | UNKNOWN. Unavailable fields are
+# UNKNOWN — never invented. Authenticated sources without credentials: BLOCKED.
+sources:
+  - source_id: 'SRC-001'
+    source_name:
+    source_type:       # FILE | API | INLINE | UNKNOWN
+    authority:         # AUTHORITATIVE | QUALIFIED_EXTERNAL | USER_PROVIDED | DERIVED | UNKNOWN
+    provenance:        # ACQUIRED | DERIVED | NORMALIZED | ALIGNED | USER_PROVIDED | UNKNOWN
+    provider:          # or UNKNOWN
+    retrieval_method:  # FILE_READ | API_CALL | INLINE_INPUT | NONE
+    retrieval_timestamp: # or UNKNOWN
+    market:
+    symbol:
+    exchange:
+    timezone:
+    timeframe:
+    session:
+    coverage_start:
+    coverage_end:
+    raw_fingerprint:   # sha256 over raw bytes (prompt §24) or UNAVAILABLE
+    raw_preservation:  # preserved | unavailable
+    authentication:    # none | required_unavailable  (required_unavailable => BLOCKED)
+
+# ----------------------------------------------------------------- datasets --
+datasets:
+  - dataset_id: 'DS-001'
+    source_id: 'SRC-001'
+    fixture: false             # true ONLY for TEST_FIXTURE data; fixture datasets never enter production contracts (mechanically rejected)
+    fields:                    # canonical column order: ts,open,high,low,close,volume
+    row_count:
+    coverage_start:
+    coverage_end:
+    raw_fingerprint:           # sha256 of the raw bytes as supplied
+    normalized_fingerprint:    # sha256 of the canonical normalized body (or UNAVAILABLE)
+
+# ------------------------------------------------------------ transformations --
+# Every transformation is recorded; raw data is never destroyed (prompt §16/§23).
+transformations: []
+
+# ---------------------------------------------------------------- integrity --
+integrity:
+  missing_bars:        # DI01
+  duplicate_bars:      # DI02
+  out_of_order:        # DI03
+  timestamp_gaps:      # DI04
+  ohlc_errors:         # DI05 (high>=max(o,c), low<=min(o,c), high>=low)
+  invalid_values:      # DI06 (NaN/inf/invalid nulls)
+  volume_issues:       # DI07 (zero vs missing vs negative vs unknown semantics)
+  identity_issues:     # DI08 (symbol/exchange consistency)
+  timeframe_issues:    # DI09 (declared timeframe consistency)
+  coverage_sufficiency: # DI10
+  checks:              # [{check_id: DI01, verdict: pass|warn|fail, findings: [...]}]
+
+# ----------------------------------------------------------------- coverage --
+# Required coverage accounts for warm-up/lookback/recursive state context, not
+# just the incident bar (prompt §14).
+coverage:
+  required_start:
+  required_end:
+  available_start:
+  available_end:
+  warmup_bars_required:
+  warmup_bars_available:
+  sufficient:          # true | false
+  missing_requirements: []
+
+# ----------------------------------------------------------------- evidence --
+# expected vs observed vs data_fact strictly separated (prompt §20). Facts carry
+# {fact, value, classification, provenance, source_id, confidence} (prompt §48).
+evidence:
+  acquired_facts: []
+  derived_facts: []
+  normalized_facts: []
+  aligned_facts: []
+  unknowns:            # [{id: UNK-001, description, material: true|false}] — load-bearing unknowns gate the contract
+  contradictions:      # [{id: CONTRA-001, claim_a, claim_b, resolution: NONE_PRESERVED}] — chart-vs-data conflicts preserved, never resolved (prompt §30)
+
+# -------------------------------------------------------------- limitations --
+limitations: []
+
+# ----------------------------------------------------------------- sufficiency --
+status: 'SUFFICIENT|SUFFICIENT_WITH_WARNINGS|INSUFFICIENT|BLOCKED|INVALID_INPUT'
+data_sufficiency: 'SUFFICIENT|SUFFICIENT_WITH_WARNINGS|INSUFFICIENT|UNDETERMINED'
+
+warnings:      # [{id: W-001, code, message}]
+blockers:      # [{id: B-001, check_id, reason}]
+
+# ---------------------------------------------------------------- downstream --
+# Only SUFFICIENT / SUFFICIENT_WITH_WARNINGS open Phase 13 (prompt §34).
+downstream:
+  allowed: true|false
+  next_stage: 'EXECUTION_TRACE_AND_DEBUG|HALT'
+
+root_cause: 'NOT_EVALUATED'   # firewall: Phase 14's field; permanently NOT_EVALUATED here
+result_hash: '<sha256 hex>'

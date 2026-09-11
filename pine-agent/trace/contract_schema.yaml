@@ -1,0 +1,255 @@
+# ============================================================================
+# PHASE 13 — EXECUTION TRACE & DEBUG CONTRACT SCHEMA (schema v1.0)
+# ============================================================================
+# Predecessor: data_acquisition_and_alignment (Phase 12)
+# Successor:   root_cause_analysis (Phase 14)
+#
+# Phase 13 answers ONLY: "Given the authoritative implementation, plan,
+# Incident, and aligned data, what execution behavior can be established?"
+# It must NOT answer "why" — that belongs to Phase 14.
+# ============================================================================
+
+schema_version: "1.0"
+stage: execution_trace_and_debug
+predecessor: data_acquisition_and_alignment
+successor: root_cause_analysis
+
+trace_id: trace-<12 hex of sha256 over the canonical body>   # deterministic; no clock/random/env
+
+created_from:
+  incident_id: 'incident-xxxxxxxxxxxx'        # from Phase 11 (verbatim)
+  data_contract_id: 'data-xxxxxxxxxxxx'       # from Phase 12 (verbatim)
+  implementation_id: 'impl-xxxxxxxxxxxx'      # from Phase 9 result (verbatim)
+  planning_id: 'plan-xxxxxxxxxxxx'            # from Phase 9 result (verbatim)
+  post_verification_id: 'post-xxxxxxxxxxxx'   # from Phase 10 REV 4 (verbatim)
+
+# ------------------------------------------------------------- identity ---
+# Upstream chain (hard gate, ET-G1..ET-G4). Every identity must resolve:
+# request -> routing -> formalization -> pre-verification -> feasibility ->
+# planning -> implementation -> post-verification -> incident -> data.
+identity:
+  chain_complete:            # true | false — any missing/mismatched id is BLOCKED
+  implementation_source_sha256:   # sha256 of the production Pine artifact bytes
+  source_hash_verified:      # true iff recomputed sha256 == Phase 9 recorded source_sha256 (ET-G5)
+  plan_linkage_verified:     # true iff plan modules == implementation module map (ET-G6)
+  data_contract_integrity:   # PASS | FAIL (structural + fingerprint verification, ET-G7)
+
+# ---------------------------------------------------------------- target ---
+target:
+  symbol:                    # from Phase 11/12 (verbatim or UNKNOWN)
+  exchange:                  # verbatim or UNKNOWN
+  timeframe:                 # verbatim; never converted
+  timezone:                  # verbatim or UNKNOWN
+  localization:              # EXACT | PROBABLE | APPROXIMATE | UNKNOWN (from Phase 12)
+  localized_timestamp:       # aligned timestamp from Phase 12 (verbatim or UNKNOWN)
+  bar_index:                 # only when data proves it; UNKNOWN otherwise (never fabricated)
+
+# ------------------------------------------------------------- execution ---
+execution:
+  mode:                      # DIRECT | INSTRUMENTED | RECONSTRUCTED | STATIC_ONLY | UNAVAILABLE
+  mode_basis:                # why this mode (recorded, never upgraded silently)
+  environment:               # where execution/reconstruction ran (or UNAVAILABLE)
+  runtime_available:         # true | false — TradingView/Pine runtime access
+  instrumentation_used:      # true | false
+  priority_note:             # DIRECT > INSTRUMENTED > RECONSTRUCTED > STATIC_ONLY > UNAVAILABLE; never upgraded
+
+# ---------------------------------------------------------- trace window ---
+trace_window:
+  start:                     # first traced bar timestamp (or UNKNOWN)
+  end:                       # last traced bar timestamp (or UNKNOWN)
+  bars:                      # count of bars in the window (0 when not traced)
+  reason:                    # dependency-driven window justification (close[1] etc.)
+
+# ----------------------------------------------------------------- nodes ---
+# Canonical trace node (prompt §6). Evidence classes (prompt §7):
+#   DIRECT_EXECUTION_EVIDENCE | INSTRUMENTED_EXECUTION_EVIDENCE |
+#   DETERMINISTIC_RECONSTRUCTION | DERIVED_VALUE | STATIC_CODE_FACT |
+#   USER_REPORTED | UNKNOWN
+# evaluation_status: EVALUATED | NOT_EVALUATED | UNKNOWN
+# value_type: bool | series_float | series_int | na | literal | structure
+# NA stays distinct from FALSE (prompt §16); NOT_EVALUATED stays distinct
+# from FALSE (prompt §18).
+nodes:
+  - trace_node_id: 'trace-node-<12 hex>'      # sha256(trace_id|bar|module|expression|role)
+    category:        # INPUT | SERIES | CALCULATION | STATE | CONDITION | MODULE | SIGNAL | OUTPUT
+    source: implementation/phase9_pine.pine
+    source_line:     # 1-based line in the production source (STATIC_CODE_FACT anchor)
+    source_module:   # M-STATE | M-SIGNAL | M-INTEG (from the plan; never invented)
+    expression:      # verbatim from the production source
+    inputs: []       # referenced series/values, e.g. ['close[i]', 'close[i-1]']
+    value:           # evaluated value, NA, or UNKNOWN — never fabricated
+    value_type:
+    evaluation_status:
+    evidence_classification:
+    confidence:      # HIGH | MEDIUM | LOW | UNDETERMINED (evidence reliability only)
+
+# ----------------------------------------------------------------- state ---
+# Stateful variables (prompt §19); previous/current/assignment events.
+states:
+  - variable:
+    previous_value:
+    current_value:
+    assignment_event:
+    bar:
+    evidence_classification:
+
+# ------------------------------------------------------------- conditions ---
+# Boolean decomposition (prompt §17): operands recorded independently.
+conditions:
+  - condition_id:
+    expression:
+    left_operand:
+    right_operand:
+    operator:
+    value:
+    evaluation_status:
+    evidence_classification:
+    source_module:
+
+# ---------------------------------------------------------------- modules ---
+# Module map from the Phase 8 plan (prompt §20) — never invented.
+modules:
+  - module_id:
+    module_type:
+    source_requirements: []
+    source_formulae: []
+    source_edge_cases: []
+    traced:            # COMPLETE | PARTIAL | NOT_APPLICABLE | UNKNOWN
+
+# ----------------------------------------------------------------- signal ---
+signal:
+  condition_id:            # C-1 (from the plan)
+  expression:              # final signal boolean verbatim
+  value:                   # TRUE | FALSE | NA | NOT_EVALUATED | UNKNOWN (per bar)
+  bar:
+  evidence_classification:
+  prerequisite_chain: []   # candidate -> prerequisites -> final (order preserved)
+
+# ----------------------------------------------------------------- output ---
+# Output mechanism identified separately from the signal condition
+# (prompt §23/§24): a display.none plot is NOT visual confirmation.
+output:
+  mechanism:         # plot | plotchar | barcolor | bgcolor | hline | alertcondition | drawing | none
+  expression:        # verbatim
+  visible_output:    # true | false | UNKNOWN (display=display.none => false, STATIC_CODE_FACT)
+  evidence_classification:
+  note:              # visible-marker inference is prohibited without independent evidence
+
+# ---------------------------------------------------------- dependencies ---
+data_dependencies:
+  - dependency:      # e.g. close[i-1] (series), MTF, request.*
+    satisfied:       # true | false | UNKNOWN
+    source:          # where the dependency value came from (or MISSING_DATA)
+
+# -------------------------------------------------------------- coverage ---
+coverage:
+  inputs:            # COMPLETE | PARTIAL | UNKNOWN | NOT_APPLICABLE
+  calculations:
+  state:
+  conditions:
+  signal:
+  output:
+  mtf:               # NOT_APPLICABLE when the implementation has no request.security
+  note:              # a partial trace is never presented as complete
+
+# ---------------------------------------------------------- reconstruction ---
+# Required when mode == RECONSTRUCTED (prompt §41). Never claimed as direct
+# TradingView runtime observation (prompt §8/§9).
+reconstruction:
+  performed:         # true | false
+  source_hash:       # sha256 of the reconstructed source bytes
+  data_contract_hash:# data contract result_hash (verbatim)
+  interpreter_or_model:   # e.g. pine-subset-reconstruction-v1
+  semantic_scope:    # supported construct list
+  unsupported_features: []   # constructs that force UNKNOWN for affected nodes
+  equivalence_checks: []     # [{check, result}]
+  result_hash:       # sha256 over the reconstruction outputs (deterministic)
+
+# ------------------------------------------------------- instrumentation ---
+# Temporary debug build only (prompt §10–§12); production source untouched.
+instrumentation:
+  used:              # true | false
+  production_source_hash:
+  instrumented_source_hash:
+  manifest:          # trace/instrumentation_manifest.yaml content or null
+  semantic_equivalence:   # VERIFIED | UNVERIFIED | FAILED | NOT_ATTEMPTED
+  evidence_accepted:      # true | false — unverified equivalence downgrades/rejects
+
+# ----------------------------------------------------------------- static ---
+# Facts established from source alone (prompt §40) — never promoted to
+# runtime evidence (ET-G18).
+static_facts:
+  - fact:
+    source_line:
+    evidence_classification: STATIC_CODE_FACT
+
+# ------------------------------------------------------------- anomalies ---
+# Apparent implementation defects are RECORDED, never repaired (prompt §43).
+static_anomalies: []       # [{ id, description, source_line, classification: STATIC_ANOMALY_OBSERVED }]
+
+# ------------------------------------------------------------------- gaps ---
+# Every missing trace element is classified (prompt §32); never silently
+# omitted. MISSING_DATA | MISSING_RUNTIME_ACCESS | MISSING_LOCALIZATION |
+# UNSUPPORTED_RUNTIME_SEMANTICS | INSUFFICIENT_HISTORY |
+# UNVERIFIED_RECONSTRUCTION | SOURCE_AMBIGUITY | UNKNOWN
+trace_gaps:
+  - gap_id:
+    classification:
+    affected:
+    reason:
+
+contradictions: []         # [{ id, claim_a, claim_b, resolution: NONE_PRESERVED }] — both preserved
+unknowns: []               # [{ id, description, material }] — load-bearing unknowns preserved
+limitations: []
+
+# ------------------------------------------------------------------ status ---
+status:              # READY | READY_WITH_WARNINGS | PARTIAL_TRACE | INSUFFICIENT_EVIDENCE | INVALID_INPUT | BLOCKED
+warnings: []         # [{ id, code, message }]
+blockers: []         # [{ id, check_id, reason }]
+
+# ------------------------------------------------------- firewall fields ---
+# Optional placeholders ONLY (prompt §35); must remain NOT_EVALUATED.
+root_cause:
+  status: NOT_EVALUATED
+repair:
+  status: NOT_EVALUATED
+
+# ------------------------------------------------------------------- gate ---
+downstream:
+  allowed:           # true iff status in {READY, READY_WITH_WARNINGS}
+  next_stage:        # ROOT_CAUSE_ANALYSIS when open; HALT otherwise
+next_stage_note:     # narrative handoff (no causal content)
+
+determinism:
+  status:            # PASS | FAIL
+  runs:              # fresh-process count compared (>= 3 when verified)
+  evidence:
+
+result_hash:         # sha256 of the canonical result body (deterministic)
+
+# ------------------------------------------------------------ check table ---
+# Mechanical checks ET-G1..ET-G23 (prompt §47) with deterministic verdicts.
+checks:
+  - { check_id: 'ET-G1',  domain: 'phase10_validation_gate',   verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G2',  domain: 'phase11_gate',              verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G3',  domain: 'phase12_gate',              verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G4',  domain: 'identity_chain_integrity',  verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G5',  domain: 'implementation_hash',       verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G6',  domain: 'plan_implementation_traceability', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G7',  domain: 'data_contract_integrity',   verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G8',  domain: 'incident_localization_integrity', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G9',  domain: 'trace_node_schema',         verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G10', domain: 'evidence_classification',   verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G11', domain: 'series_reference_correctness', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G12', domain: 'na_unknown_distinction',    verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G13', domain: 'boolean_trace_completeness', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G14', domain: 'state_trace_integrity',     verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G15', domain: 'mtf_trace_integrity',       verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G16', domain: 'instrumentation_firewall',  verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G17', domain: 'reconstruction_declaration', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G18', domain: 'static_runtime_separation', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G19', domain: 'root_cause_firewall',       verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G20', domain: 'trace_completeness',        verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G21', domain: 'deterministic_ids',         verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G22', domain: 'deterministic_serialization', verdict: 'pass|fail', findings: [] }
+  - { check_id: 'ET-G23', domain: 'downstream_gate_correctness', verdict: 'pass|fail', findings: [] }

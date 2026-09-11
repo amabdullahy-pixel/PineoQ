@@ -1,0 +1,81 @@
+# phase 12 result - market data acquisition & alignment (schema v1.0)
+# Deterministic, honest record of the Phase 12 run in THIS environment.
+# Provenance: generated from data_acquisition.pl CLI run 2026-09-10 against
+# incident incident-940ef2698dda with NO --data source supplied (no external
+# network access available; per procedure SS28 the honest result is recorded,
+# no synthetic data substituted). Contract bytes deterministic (3 fresh
+# processes byte-identical, sha256 f713ed0291f61eb28a298ccbeed3f05690a6513d9f46348de19a39564433fd21).
+phase: 12
+phase_version: "12.0-rev1"
+
+status: INSUFFICIENT_DATA
+
+incident_id: 'incident-940ef2698dda'
+data_contract_id: 'data-7b490c707d74'
+result_hash: 'aee03a4ce3b6aae4354d6a993d0fada84d78c16056694b49458406b1f940b7a9'
+
+input_gate:
+  phase10_validated: true        # verification/phase10_post_verification_result.yaml: verdict validated (post-918536e1e7d8), read-only
+  phase11_ready: true            # incident contract READY_WITH_WARNINGS, blockers empty, next_stage DATA_ACQUISITION_AND_ALIGNMENT
+  downstream_allowed: false      # closed: INSUFFICIENT_DATA
+
+acquisition:
+  status: NOT_PERFORMED          # no external market-data access in this environment (procedure SS28)
+  sources: []                    # zero sources acquired; nothing fabricated
+  note: "Acquisition requires an explicit --data CSV source (ts,open,high,low,close,volume) or a qualified provider feed; neither was available. No market data was retrieved, inferred, or synthesized."
+
+alignment:
+  status: NOT_EVALUATED
+  target:
+    symbol: 'BTCUSDT'            # USER_PROVIDED (Phase 11)
+    exchange: 'UNKNOWN'
+    market_type: 'UNKNOWN'
+    instrument_type: 'UNKNOWN'
+    timeframe: '5m'              # USER_PROVIDED (Phase 11)
+    timezone: 'UNKNOWN'
+    session: 'UNKNOWN'
+  localization:
+    requested_timestamp: 'UNKNOWN'
+    aligned_timestamp: 'UNKNOWN'
+    bar_index: 'UNKNOWN'         # never fabricated (procedure SS19)
+    alignment_status: 'UNKNOWN'
+    alignment_confidence: 'UNDETERMINED'
+
+integrity:
+  status: NOT_EVALUATED
+  checks: []                     # DI01..DI10 require an acquired dataset; none acquired
+  note: "All integrity verdicts remain UNKNOWN-by-absence, not pass. DA-G checks in the contract record engine mechanics only (16 pass / 0 fail of the mechanical table)."
+
+coverage:
+  status: UNDETERMINED
+  required_start: 'UNKNOWN'
+  required_end: 'UNKNOWN'
+  available_start: 'UNKNOWN'
+  available_end: 'UNKNOWN'
+  note: "Warm-up/lookback requirements depend on the indicator parameters; without data, coverage cannot be evaluated."
+
+unknowns:
+  - "no market data acquired - dataset-level facts cannot be established (never fabricated)"   # material
+  - "exchange identity UNKNOWN (load-bearing for data identity)"
+  - "timezone UNKNOWN (load-bearing for timestamp alignment)"
+  - "session UNKNOWN (material for session alignment)"
+  - "incident bar localization UNKNOWN (no timestamp evidence in Phase 11 evidence)"
+contradictions: []               # none recorded - single environment, no chart-vs-data comparison possible without data
+warnings: []                     # no partial warnings: the missing dataset is a status-level condition, not a warning
+blockers: []                     # none: gate/identity all valid; insufficiency is honest absence of data, not a defect
+limitations:
+  - "incident bar localization unknown: no timestamp evidence to map (bar_index stays UNKNOWN, never fabricated)"
+  - "no external network access in this environment; acquisition requires an explicit --data source"
+
+determinism:
+  status: PASS
+  runs: 3
+  evidence: "3 fresh processes byte-identical (sha256 f713ed0291f61eb28a298ccbeed3f05690a6513d9f46348de19a39564433fd21)"
+
+next_stage: HALT
+downstream:
+  allowed: false
+  next_stage: HALT
+  note: "EXECUTION_TRACE_AND_DEBUG stays closed. Opening it requires a new Phase 12 run with an explicit qualified data source reaching READY or READY_WITH_WARNINGS."
+
+root_cause: NOT_EVALUATED        # firewall: Phase 14 owns causality; Phase 12 records data facts only

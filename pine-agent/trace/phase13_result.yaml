@@ -1,0 +1,116 @@
+# phase 13 result - execution trace & debug (schema v1.0)
+# Deterministic, honest record of the Phase 13 run in THIS environment.
+# Provenance: generated from trace/execution_trace.pl CLI run 2026-09-11 against
+# incident incident-940ef2698dda (Phase 11, READY_WITH_WARNINGS) and its honest
+# Phase 12 data contract data-7b490c707d74 (INSUFFICIENT_DATA, no market data
+# acquired in this environment). Per procedure SS3 the hard input gate holds:
+# the Phase 12 gate is closed, so the production trace is BLOCKED — no bar was
+# traced, no runtime value invented, nothing fabricated. The engine's trace
+# machinery is fully verified via TEST_FIXTURE selftests (TRC-001..028 +
+# NG-001..013); a fixture-gated golden-path run (deterministic, fingerprint-
+# verified CSV) reaches READY with reconstruction evidence but is fixture-scoped
+# and never mixed into this production result. Contract bytes deterministic
+# (3 fresh processes byte-identical, sha256 3346ec4318cc2482d42ad18956ac3d01a60ab8a5e06ea2a02deab25f88a59598).
+phase: 13
+phase_version: "13.0-rev1"
+
+status: BLOCKED
+
+trace_id: 'trace-c4c8eb190eb6'
+result_hash: 'db49e4870ce3951772975f5a80481f8b1727334cd7160b8a215d2e74cc9e5a46'
+
+inputs:
+  incident_id: 'incident-940ef2698dda'        # /tmp/v_inc.yaml (Phase 11 contract; archived provenance: incident path)
+  data_contract_id: 'data-7b490c707d74'       # regenerated deterministically by data_acquisition.pl from the same incident contract
+  implementation_id: 'UNKNOWN'                # not read on the blocked path: Stage 04 aborts before Stage 05; identity facts READ from the two input contracts are preserved, the rest stay UNKNOWN
+  planning_id: 'UNKNOWN'
+  post_verification_id: 'post-918536e1e7d8'   # verification/phase10_post_verification_result.yaml (verdict: validated)
+
+input_gate:
+  phase10_validated: true        # ET-G1 pass (post-918536e1e7d8, verdict validated; read-only)
+  phase11_ready: true            # ET-G2 pass (incident-940ef2698dda READY_WITH_WARNINGS, blockers empty)
+  phase12_open: false            # ET-G3 FAIL: data contract status INSUFFICIENT_DATA — hard input gate holds (procedure SS3)
+
+execution:
+  mode: UNAVAILABLE              # no bar traced: Phase 12 provides no dataset, so neither reconstruction nor static-bar tracing has a target
+  environment: 'none (no TradingView/Pine runtime in this environment)'
+  runtime_available: false
+  instrumentation_used: false    # production source untouched; no temporary debug build exists or is claimed
+
+target:
+  symbol: 'BTCUSDT'              # USER_PROVIDED (Phase 11)
+  exchange: 'UNKNOWN'
+  timeframe: '5m'                # USER_PROVIDED (Phase 11)
+  timezone: 'UNKNOWN'
+  localization: UNKNOWN          # never fabricated (procedure SS13)
+  localized_timestamp: 'UNKNOWN'
+  bar_index: 'UNKNOWN'
+
+trace:
+  coverage:                      # all UNKNOWN-by-absence on the blocked path (never presented as partial or complete)
+    inputs: UNKNOWN
+    calculations: UNKNOWN
+    state: UNKNOWN
+    conditions: UNKNOWN
+    signal: UNKNOWN
+    output: UNKNOWN
+    mtf: NOT_APPLICABLE
+  nodes: 0                       # no bar traced; zero nodes, zero states, zero conditions
+  states: 0
+  conditions: 0
+  signal: UNKNOWN
+  output: UNKNOWN
+
+evidence:
+  direct: 0
+  reconstructed: 0
+  instrumented: 0
+  static: 0                      # the blocked path emits no trace nodes at all; static module map facts live in the fixture-gated runs only
+  derived: 0
+  unknown: 0
+
+mechanical_checks:
+  total: 23
+  pass: 22
+  fail: 1                        # ET-G3 only — the honest gate failure that produces BLOCKED
+  note: "ET-G1..G23 executed on the production inputs; every other gate passes cleanly, ET-G3 fails for exactly the declared reason."
+
+trace_gaps: []                   # gap records are per-bar evidence bookkeeping; with zero bars traced there is nothing to classify — absence is carried by status=BLOCKED, not hidden
+contradictions: []               # none recorded
+unknowns:
+  - "no bar-level execution values can be established without a fingerprint-verified dataset (never fabricated)"   # material
+  - "bar localization UNKNOWN (carried from Phase 11/12; never invented)"
+  - "all runtime/state/condition/signal/output values UNKNOWN on the blocked path"
+warnings: []                     # none: the blocked gate is a status-level condition, not a warning
+blockers:
+  - id: 'B-001'
+    check_id: 'ET-G3'
+    reason: "Phase 12 gate: data contract status is 'INSUFFICIENT_DATA'"   # reproducible: rerun data_acquisition.pl --incident <contract> with no --data
+limitations:
+  - "reconstruction requires the exact raw dataset matching the Phase 12 raw_fingerprint; no dataset exists in this environment"
+  - "no TradingView/Pine runtime in this environment; DIRECT and INSTRUMENTED modes unavailable even with data (RECONSTRUCTED is the ceiling)"
+
+determinism:
+  status: PASS
+  runs: 3
+  evidence: "3 fresh processes byte-identical (sha256 3346ec4318cc2482d42ad18956ac3d01a60ab8a5e06ea2a02deab25f88a59598)"
+
+verification_of_engine:          # engine correctness established on fixture-gated runs (TEST_FIXTURE firewall; never mixed into production results)
+  selftest: "53/53 PASS (TRC-001..028 + NG-001..013)"
+  golden_path_fixture_run:
+    trace_id: 'trace-379455894ab4'
+    status: READY
+    mode: RECONSTRUCTED          # pine-subset-reconstruction-v1 over the fingerprint-verified fixture CSV
+    nodes: 62
+    signal_value: '1 (at fixture bar index 4; TEST_FIXTURE evidence only)'
+    contract_sha256: '70bb4dfcc36e9cd6be38a6f6d0fea75c5153250e5d863b98e44a91ef481cc277'
+  gate_check: "approve (READY → exit 0) and reject (BLOCKED → exit 2) verified"
+
+root_cause: NOT_EVALUATED        # firewall: Phase 14 owns causality; Phase 13 records execution facts only
+repair: NOT_EVALUATED            # firewall: Phase 15 owns repair
+
+next_stage: HALT
+downstream:
+  allowed: false
+  next_stage: HALT
+  note: "ROOT_CAUSE_ANALYSIS stays closed. Opening it requires a Phase 12 run with a qualified dataset reaching READY/READY_WITH_WARNINGS (downstream: EXECUTION_TRACE_AND_DEBUG), then a fresh Phase 13 run against that contract."

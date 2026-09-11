@@ -7,6 +7,8 @@
 # No Phase 10. No-Pine output in the result contract (metadata only).
 # ============================================================================
 use strict;
+use FindBin;
+use File::Spec;
 use warnings;
 use Digest::SHA qw(sha256_hex);
 use Encode qw(decode encode);
@@ -492,7 +494,7 @@ sub run_pipeline {
 sub selftest {
     my ($pass, $fail) = (0, 0);
     my $ok = sub { my ($cond, $name) = @_; if ($cond) { $pass++; } else { $fail++; print "FAIL: $name\n"; } };
-    my $plan = _slurp("C:/Users/Kabir/OneDrive/Documents/PineScript.6/pine-agent/implementation/phase9_authoritative_plan.yaml");
+    my $plan = _slurp(File::Spec->catfile($FindBin::Bin, "phase9_authoritative_plan.yaml"));
 
     my $r = run_pipeline($plan);
     $ok->($r->{implementation_status} eq 'COMPLETED', 'T-IMPL-001 status COMPLETED');

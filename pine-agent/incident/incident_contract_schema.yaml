@@ -1,0 +1,118 @@
+# ============================================================================
+# CONTRACT SCHEMA — Incident Intake & Visual Evidence (Phase 11)
+# ============================================================================
+# Specification only — mirrors the style of feasibility/contract_schema.yaml.
+# Narrative authority: incident/visual_evidence_procedure.md.
+# Engine: incident/incident_intake.pl (core Perl, zero non-core deps).
+#
+# v1.0 (Phase 11 — additive to the validated Phase 1-10 pipeline; NO upstream
+#   artifact modified): evidence classification (OBSERVED | USER_REPORTED |
+#   INFERRED | UNKNOWN), confidence (HIGH | MEDIUM | LOW | UNDETERMINED),
+#   provenance (CHART_IMAGE | USER_TEXT | USER_MARKED_REGION | PROJECT_ARTIFACT
+#   | UNKNOWN), deterministic content-addressed incident identity
+#   (incident-<12 hex>), explicit expected/observed/user_interpretation
+#   separation, UNKNOWN/NOT_PROVIDED/NOT_VISIBLE/NOT_ESTABLISHED vocabulary,
+#   contradiction preservation (never silently resolved), no root-cause
+#   output, downstream gate to DATA_ACQUISITION_AND_ALIGNMENT.
+#
+# CORE PRINCIPLE: OBSERVATION != INFERENCE != DIAGNOSIS.
+#   USER_REPORTED is never converted to OBSERVED; OBSERVED is never converted
+#   to ROOT_CAUSE (root cause belongs to Phase 14).
+# ============================================================================
+
+schema_version: "1.0"
+stage: incident_intake
+predecessor: post_verification        # incidents arrive after a validated pipeline exists
+successor: data_acquisition_and_alignment
+
+incident:
+  # --- Identity -----------------------------------------------------------------
+  incident_id: null                # "incident-" + 12 hex of sha256 over the canonical body (deterministic)
+  incident_version: null           # "rev1" per canonical body; a changed body yields a new incident_id (never mutated in place)
+  supersedes: null                 # optional link to a superseded incident id
+  sequence: null                   # INCIDENT-001, INCIDENT-002, ... when multiple incidents are ingested from one report
+
+  # --- Input evidence --------------------------------------------------------------
+  created_from:
+    user_report: null              # verbatim user text (preserved exactly; normalization is separate)
+    chart_image: []                # [{ img_id, path, image_sha256, fingerprint_status }] per supplied image
+    project_artifact: null         # e.g. implementation/phase9_pine.pine (inspected, never modified)
+  image_present: false
+  user_report_present: false
+
+  # --- Target -----------------------------------------------------------------------
+  target:
+    symbol: null                   # value + classification (see *_status below) | UNKNOWN
+    symbol_status: null            # OBSERVED | USER_REPORTED | UNKNOWN
+    exchange: null
+    exchange_status: null
+    timeframe: null
+    timeframe_status: null
+    timezone: null
+    timezone_status: null          # NOT_PROVIDED | OBSERVED | UNKNOWN
+    implementation_id: null        # content-addressed impl-... | UNKNOWN when not provided
+  source_artifact: null            # path of the inspected artifact, when provided
+
+  # --- Localization -------------------------------------------------------------------
+  localization:
+    method: null                   # USER_POINTED | VISUALLY_IDENTIFIED | TEXT_LABEL | TIME_AXIS |
+                                   # PRICE_AXIS | APPROXIMATE_ONLY | NOT_LOCALIZABLE
+    timestamp: null                # exact value only when literally readable; else UNKNOWN
+    timestamp_status: null         # OBSERVED | UNKNOWN | NOT_ESTABLISHED
+    bar_index: null                # exact value only when literally readable; else UNKNOWN
+    bar_index_status: null         # OBSERVED | UNKNOWN | NOT_ESTABLISHED
+    region: null                   # textual region reference (e.g. lower volume panel, highlighted zone)
+    precision: null                # EXACT | APPROXIMATE | UNKNOWN
+  localization_trace: []           # [{ evidence_id, method, statement }] — every localization claim traces to evidence
+
+  # --- Expected / Observed / Interpretation (mandatory separation) --------------------
+  expected:
+    description: null              # what the user believes should have happened
+    source: USER_TEXT
+  observed:
+    description: null              # what the supplied evidence actually demonstrates (carefully-phrased absence allowed)
+    source: null                   # CHART_IMAGE | USER_TEXT | MIXED | NONE
+  user_interpretation:
+    description: null              # the user's causal reading; NOT a requirement, NOT evidence
+    source: USER_TEXT
+
+  normalized_user_observation: null  # meaning-preserving normalization; original preserved verbatim above
+
+  # --- Evidence -------------------------------------------------------------------------
+  evidence: []                     # [{ evidence_id, source, classification, confidence, location,
+                                   #   statement, source_image (when image-sourced) }]
+                                   #   classification: OBSERVED | USER_REPORTED | INFERRED | UNKNOWN
+                                   #   confidence:     HIGH | MEDIUM | LOW | UNDETERMINED
+  contradictions: []               # [{ id, claim_a, claim_b, resolution: NONE_PRESERVED }] — both claims kept
+  unknowns: []                     # [{ id, description }]
+  limitations: []                  # [{ id, description }] — image/medium limitations as metadata (not silent assumptions)
+
+  # --- Status & downstream gate -------------------------------------------------------------
+  phase11_status: null             # READY | READY_WITH_WARNINGS | INSUFFICIENT_VISUAL_EVIDENCE |
+                                   # INVALID_INPUT | BLOCKED
+  next_stage: null                 # DATA_ACQUISITION_AND_ALIGNMENT | HALT
+  downstream_allowed: false        # true iff phase11_status in {READY, READY_WITH_WARNINGS} AND blockers == []
+  blockers: []                     # [{ id, check_id, reason }] — any entry denies downstream access
+  warnings: []                     # [{ id, code, message }] — non-blocking, surfaced to Phase 12
+  evidence_sufficiency: null       # SUFFICIENT | INSUFFICIENT (recorded rationale in notes)
+  notes: []                        # free-form Phase-11 notes for downstream stages
+
+  # --- Result integrity ----------------------------------------------------------------------
+  result_hash: null                # sha256 of the canonical result body (deterministic)
+
+# ----------------------------------------------------------------------------
+# GATE RULES
+# ----------------------------------------------------------------------------
+gate_rules:
+  - "OBSERVATION != INFERENCE != DIAGNOSIS: USER_REPORTED is never converted to OBSERVED; OBSERVED is never converted to ROOT_CAUSE."
+  - "Phase 11 outputs investigation targets, never root causes; suspected anomaly / investigation target wording only."
+  - "No external market data: web/exchange/OHLCV acquisition is exclusively Phase 12; Phase 11 evidence sources are CHART_IMAGE, USER_TEXT, USER_MARKED_REGION, PROJECT_ARTIFACT, UNKNOWN."
+  - "Missing information is recorded explicitly (UNKNOWN | NOT_PROVIDED | NOT_VISIBLE | NOT_ESTABLISHED); no fabrication of timestamps, bar indexes, or values."
+  - "Absence claims are visual only: 'no visible BUY marker detected' — never 'the signal did not fire' (that requires runtime/data evidence)."
+  - "Contradictions between user statement and image are recorded (CONTRADICTORY_EVIDENCE) and preserved; never silently resolved."
+  - "Skill knowledge explains concepts; it is never evidence."
+  - "Multiple independent anomalies become independent incidents; merging requires explicit determinism-documented justification."
+  - "incident_id = 'incident-' + first 12 hex of sha256 over the canonical body; identical canonical inputs MUST produce identical ids; no timestamps/randomness/process/env input."
+  - "phase11_status READY | READY_WITH_WARNINGS AND blockers == [] AND next_stage == DATA_ACQUISITION_AND_ALIGNMENT is REQUIRED for downstream access; all other statuses set next_stage=HALT."
+  - "INSUFFICIENT_VISUAL_EVIDENCE is a legitimate outcome; evidence is never fabricated to satisfy the gate."
+  - "Phase 11 never modifies Phase 1-10 artifacts, the implementation plan, Pine source, Skills, or the registry."

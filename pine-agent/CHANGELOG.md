@@ -1323,3 +1323,234 @@ Chronological, append-only. Never rewrite or delete historical entries.
   impl-8540becf6595 (REV 3 FAIL), Phase 10 REV 1/2/3 records.
 - Resource budgets (actual): request_calls 0, plot_count 1 (the authorized
   neutral construct), drawing_objects 0.
+
+---
+
+## 2.1.0 - PHASE 11: Incident Intake & Visual Evidence Engine (2026-09-10)
+
+**Status:** incident-intake-stage
+
+### Delivered
+
+- incident/visual_evidence_procedure.md - Phase 11 narrative authority
+  (SS1-SS15: mission/boundary, input model, visual inspection dimensions,
+  region localization, expected/observed/interpretation separation,
+  confidence & provenance, image fingerprint, contradictions, deterministic
+  identity, status model, root-cause firewall, stages, exit codes & gate,
+  testing & determinism, CLI documentation).
+- incident/incident_contract_schema.yaml v1.0 - incident contract schema.
+- incident/incident_intake.pl - deterministic intake engine (core Perl,
+  zero non-core deps; runtime contract identical to the other engines):
+  - stages 01-14; mechanical checks INT-G1..INT-G8;
+  - schema enums enforced, no silent extension: source CHART_IMAGE |
+    USER_TEXT | USER_MARKED_REGION | PROJECT_ARTIFACT | UNKNOWN;
+    classification OBSERVED | USER_REPORTED | INFERRED | UNKNOWN;
+    confidence HIGH | MEDIUM | LOW | UNDETERMINED;
+  - image fingerprints computed over raw bytes only; images are never
+    modified or recompressed and are never implicitly inspected;
+  - verbatim user report preserved (created_from.user_report);
+    normalization is recorded separately;
+  - root-cause firewall: diagnosis wording in any engine-derived field is
+    mechanically rejected (root cause belongs to Phase 14);
+  - no market-data retrieval (exclusive Phase 12 domain); no Pine emitted;
+  - status model READY | READY_WITH_WARNINGS | INSUFFICIENT_VISUAL_EVIDENCE |
+    INVALID_INPUT | BLOCKED; the downstream gate opens
+    DATA_ACQUISITION_AND_ALIGNMENT only for READY / READY_WITH_WARNINGS
+    contracts with empty blockers;
+  - deterministic content-addressed identity:
+    incident_id = incident- plus first 12 hex of sha256(canonical body) -
+    no clock, no randomness, no environment values.
+- CLI: --user-report FILE | --report-text TEXT, --image FILE (repeatable,
+  supplied order kept), --image-obs IMG|statement|classification|confidence,
+  --symbol/--exchange/--timeframe/--timezone/--implementation-id,
+  --expected/--observed/--interpretation/--region/--artifact, --out FILE,
+  --gate-check --incident FILE (approves only open READY contracts with
+  exit 0; refuses all others with exit 2).
+- Upstream gate: the engine refuses to run unless
+  verification/phase10_post_verification_result.yaml reads
+  verdict: validated (Phase 10 REV 4, post-918536e1e7d8) - read-only.
+
+### Verification evidence
+
+- Selftest: 47/47 (INT-001..010 + NG-001..008 per procedure SS14).
+- Determinism: 3 fresh processes byte-identical for the probe contract.
+- Gate-check verified: approve path exit 0 (incident-940ef2698dda), reject
+  path exit 2 (INSUFFICIENT_VISUAL_EVIDENCE - downstream forbidden).
+- Regressions green: router 80/80, formalization 106/106, pre-verification
+  36/36, feasibility 55/55, implementation planning 46/46. Note:
+  implementation/implement.pl --selftest retains a pre-existing hardcoded
+  plan path from its original authoring environment - historical, left
+  untouched by Phase 11.
+- Integrity: zero Phase 1-10 artifacts modified; only the new incident/
+  tree was added.
+
+## 2.2.0 - PHASE 12: Market Data Acquisition & Alignment Engine (2026-09-10)
+
+### Delivered
+
+- `data_acquisition/data_acquisition.pl` — deterministic Phase 12 engine
+  (core Perl, zero non-core deps), contract-identical to the Phase 4-11
+  engines. Stages 01-20 per `meta/data_acquisition_alignment_procedure.md`;
+  mechanical checks DA-G1..DA-G16; integrity checks DI01-DI10 (missing bars,
+  duplicate bars, out-of-order bars, timestamp gaps, OHLC validity, invalid
+  numerics, volume semantics, identity/timeframe consistency, coverage
+  sufficiency).
+- `data/contract_schema.yaml` v1.0 — Phase 12 data contract schema
+  (target identity, localization, sources, datasets, transformations,
+  integrity, coverage, evidence, limitations, status, downstream gate).
+- `meta/data_acquisition_alignment_procedure.md` — SS1-SS53 binding
+  procedure (phase boundary, hard input gate, source trust model, exact data
+  identity, timeframe/timestamp/session alignment, integrity checks,
+  no-over-cleaning, multi-source contradictions, chart-vs-data firewall,
+  localization classes, sufficiency hierarchy, load-bearing unknowns,
+  transformation records, raw preservation, SHA-256 determinism, fixture
+  firewall, root-cause firewall, downstream gate).
+- `data/phase12_result.yaml` — honest result artifact for THIS environment.
+
+### Semantics
+
+- Evidence classes: ACQUIRED | DERIVED | NORMALIZED | ALIGNED |
+  USER_PROVIDED | UNKNOWN; confidence HIGH | MEDIUM | LOW | UNDETERMINED.
+- Source authority: AUTHORITATIVE | QUALIFIED_EXTERNAL | USER_PROVIDED |
+  DERIVED | UNKNOWN. Unavailable metadata stays UNKNOWN — never guessed.
+- Exact data identity: symbol/exchange/market type/timeframe/timezone/
+  session validated; lookalike identities (BTCUSD vs BTCUSDT, spot vs
+  perpetual) are never silently treated as identical.
+- Raw bytes preserved and SHA-256 fingerprinted; every transformation
+  recorded (type, parameters, reason, determinism); raw recoverable.
+- Multi-source contradictions preserved as CONTRADICTION — no winner chosen.
+- Chart image evidence never promoted to authoritative OHLCV; localization
+  EXACT | PROBABLE | APPROXIMATE | UNKNOWN — never fabricated.
+- Load-bearing unknowns preserved and gate-affecting; UNKNOWN is never
+  promoted to ASSUMED to open the downstream gate.
+- Fixture firewall: TEST_FIXTURE-tagged data is mechanically excluded from
+  production contracts.
+- Root-cause firewall: `root_cause: NOT_EVALUATED` pinned; no causal wording
+  in engine-derived fields (Phase 14 boundary).
+- Status model: READY | READY_WITH_WARNINGS | INSUFFICIENT_DATA |
+  INVALID_INPUT | BLOCKED. Only READY/READY_WITH_WARNINGS open the
+  downstream gate (EXECUTION_TRACE_AND_DEBUG).
+- Upstream gate (read-only): requires Phase 10 verdict validated
+  (post-918536e1e7d8) AND a Phase 11 contract with READY/READY_WITH_WARNINGS,
+  blockers empty, next_stage DATA_ACQUISITION_AND_ALIGNMENT.
+- Deterministic content-addressed `data_contract_id` (12-hex sha256 of the
+  canonical body; no clock/random/env). CLI: --help/--version/--selftest/
+  --gate-check with deterministic exits (0 = downstream open, 2 = closed).
+
+### Verification evidence
+
+- Selftest: 71/71 (DAT-001..028 + NG-001..009), including negative tests for
+  fabricated data, invented timestamps/sources, assumption promotion, causal
+  language, silent timezone conversion/resampling/cleaning.
+- Determinism: 3 fresh processes byte-identical for the generated contract.
+- Gate-check verified: approve path exit 0 (valid READY_WITH_WARNINGS
+  contract, data-32eb2b65da03), closed path exit 2 (INSUFFICIENT_DATA
+  contract, downstream forbidden).
+- Happy-path smoke: external CSV + full identity flags -> READY_WITH_WARNINGS,
+  downstream.allowed = true, EXECUTION_TRACE_AND_DEBUG.
+- No-data smoke: --incident only -> honest INSUFFICIENT_DATA, downstream
+  closed, incident identity preserved (UNKNOWN never fabricated).
+- Regressions green: router, formalization, pre-verification, feasibility,
+  implementation planning, Phase 11 intake (47/47).
+- Integrity: zero Phase 1-11 artifacts modified; only new Phase 12-owned
+  artifacts (data/, data_acquisition/, meta procedure, bookkeeping) added.
+
+## 2.3.0 - PHASE 13: Execution Trace & Debug Engine (2026-09-11)
+
+### Delivered
+
+- `trace/execution_trace.pl` — deterministic Phase 13 engine (core Perl,
+  zero non-core deps), contract-identical to the Phase 4-12 engines.
+  Stages 01-20 per `meta/execution_trace_procedure.md`; mechanical checks
+  ET-G1..ET-G23 (upstream gates, identity chain, implementation hash,
+  plan traceability, data-contract integrity, localization integrity,
+  node schema, evidence classification, series references, NA/UNKNOWN
+  distinction, boolean completeness, state integrity, MTF integrity,
+  instrumentation firewall, reconstruction declaration, static/runtime
+  separation, root-cause firewall, completeness, deterministic IDs,
+  downstream-gate correctness).
+- `trace/contract_schema.yaml` v1.0 — execution trace contract schema
+  (trace_id, created_from identity, target, execution mode, trace window,
+  nodes/states/conditions/modules, signal/output separation, coverage,
+  reconstruction declaration, instrumentation manifest, static facts,
+  trace gaps, contradictions, unknowns, limitations, root_cause/repair
+  firewall placeholders, status, downstream gate).
+- `meta/execution_trace_procedure.md` — SS1-SS61 binding procedure
+  (phase boundary, hard input gate, evidence classes, reconstruction-vs-
+  execution rule, series semantics, NA semantics, boolean decomposition,
+  state/module/signal/output traces, MTF/request traces, data-contract
+  authority, no acquisition, execution modes, completeness, gap
+  classification, instrumentation firewall, static-anomaly-only defect
+  handling, failure modes TRACE-001..014, selftests TRC-001..028).
+- `trace/phase13_result.yaml` + `trace/phase13_trace_contract.yaml` —
+  honest result + production trace contract for THIS environment.
+
+### Semantics
+
+- Evidence classes: DIRECT_EXECUTION_EVIDENCE |
+  INSTRUMENTED_EXECUTION_EVIDENCE | DETERMINISTIC_RECONSTRUCTION |
+  DERIVED_VALUE | STATIC_CODE_FACT | USER_REPORTED | UNKNOWN — never
+  upgraded in priority order DIRECT > INSTRUMENTED > RECONSTRUCTED >
+  STATIC_ONLY > UNAVAILABLE.
+- Reconstruction is not execution: reconstructed values are labeled
+  DETERMINISTIC_RECONSTRUCTION with the interpreter
+  (pine-subset-reconstruction-v1) and equivalence scope declared; static
+  facts are never reported as runtime observations.
+- NA / UNKNOWN / FALSE / NOT_EVALUATED kept distinct everywhere; unknown
+  identifiers reconstruct as NA, never as FALSE.
+- Boolean decomposition: every traced condition records its operands,
+  operator, component values, and evaluation status — including branches
+  not taken (NOT_EVALUATED, never collapsed to FALSE).
+- Series semantics preserved: `close[1]` records expression, offset, and
+  source bar; historical references are never replaced by current values.
+- Instrumentation firewall: production source is immutable; any temporary
+  debug build requires a manifest with production/instrumented hashes,
+  insertions, and proven semantic equivalence — unverified instrumentation
+  is rejected (INSTRUMENTATION_UNTRUSTED).
+- Fixture firewall: selftest datasets and contracts are TEST_FIXTURE-tagged
+  and mechanically excluded from production results; golden-path
+  reconstruction evidence stays fixture-scoped.
+- Root-cause firewall: `root_cause` and `repair` permanently
+  NOT_EVALUATED; a mechanical scan rejects causal wording in
+  engine-derived fields (Phase 14 boundary). Implementation anomalies are
+  recorded as STATIC_ANOMALY_OBSERVED only.
+- Data-contract authority: no data acquisition, no substitution, no
+  synthetic values; a missing dataset yields TRACE_DATA_INSUFFICIENT on
+  the affected path.
+- Status model: READY | READY_WITH_WARNINGS | PARTIAL_TRACE |
+  INSUFFICIENT_EVIDENCE | INVALID_INPUT | BLOCKED. Only
+  READY/READY_WITH_WARNINGS open ROOT_CAUSE_ANALYSIS.
+- Upstream gate (read-only): Phase 10 verdict validated
+  (post-918536e1e7d8) + Phase 11 READY/READY_WITH_WARNINGS + Phase 12
+  SUFFICIENT(_WITH_WARNINGS) with downstream: EXECUTION_TRACE_AND_DEBUG;
+  the identity chain across all ten artifacts must resolve.
+- Deterministic content-addressed `trace_id` + per-node IDs (12-hex
+  sha256 of canonical bodies; no clock/random/env; fixed field order).
+  CLI: --help/--version/--selftest/--gate-check/--incident/
+  --data-contract/--data/--implementation/--plan/--impl-result/--phase10/
+  --mode/--out with deterministic exits (0 = downstream open, 2 = closed).
+
+### Verification evidence
+
+- Selftest: 53/53 (TRC-001..028 + NG-001..013), including negatives for
+  invented runtime state, invented bars, fabricated market data, static
+  facts mislabeled as runtime evidence, UNKNOWN/NA converted to FALSE,
+  source hash mismatch, plan mismatch, unknown localization, root-cause
+  leakage, production-source modification, and repair attempts.
+- Determinism: 3 fresh processes byte-identical for both the fixture
+  golden-path contract (sha256 70bb4dfc...) and the production blocked
+  contract (sha256 3346ec43...).
+- Gate-check verified: approve path exit 0 (READY fixture contract,
+  trace-379455894ab4), reject path exit 2 (BLOCKED).
+- Golden-path smoke (fixture-gated): fingerprint-verified CSV ->
+  RECONSTRUCTED trace, 62 nodes, signal value 1 at fixture bar 4,
+  crossover decomposed into components, status READY, gate open.
+- Production run: honest BLOCKED — Phase 12 gate closed
+  (INSUFFICIENT_DATA, data-7b490c707d74); zero bars traced, zero nodes;
+  provenance identities read from the input contracts preserved.
+- Regressions green: router (80/80 + 57/57), formalization (106/106),
+  pre-verification (36/36), feasibility (55/55), planning (46/46),
+  Phase 9 (10/10; selftest plan path made portable — no generation-logic
+  change), Phase 11 intake (47/47), Phase 12 (71/71).
+- Integrity: zero Phase 1-12 artifacts modified; only new Phase 13-owned
+  artifacts (trace/, meta procedure, bookkeeping) added.
