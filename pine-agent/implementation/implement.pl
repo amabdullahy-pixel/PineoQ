@@ -167,6 +167,42 @@ sub validate_plan {
 # Generates Pine Script v6 source from the approved plan modules.
 # Every module is emitted in implementation_order; no behavior is invented.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# --- condition-driven generation helpers (Phase 9 repair upgrade, RP-002) ---
+# The generator no longer hardcodes the C-1 template: M-STATE/M-SIGNAL lines
+# are driven by (operand, direction, threshold) parsed from the plan's
+# signal_architecture condition_verbatim. Byte-compat guarantee: for 'close
+# crosses over 30' the output is byte-identical to the pre-upgrade generator
+# (selftest pins the committed source). Unsupported condition forms die
+# loudly - never silently mis-implemented.
+# ---------------------------------------------------------------------------
+sub parse_condition_verbatim {
+    my ($cv) = @_;
+    return undef unless defined $cv && length $cv;
+    if ($cv =~ /^([A-Za-z_][A-Za-z0-9_.]*)\s+crosses\s+(over|under)\s+(\d+(?:\.\d+)?)$/i) {
+        return { operand => $1, direction => lc $2, threshold => $3 };
+    }
+    return undef; # bare cross / state wording / missing threshold -> unsupported
+}
+
+sub _primary_signal {
+    my ($p) = @_;
+    my @sig = @{ $p->{signal_architecture} || [] };
+    return undef unless @sig;
+    my ($best) = sort { ($a->{precedence} || 0) <=> ($b->{precedence} || 0) } @sig;
+    return $best;
+}
+
+# external indicator operands (not Pine built-in sources) bind at chart level
+# via input.source - the VALUE is never invented by the generator
+sub _external_operand {
+    my ($pc) = @_;
+    return undef unless $pc && defined $pc->{operand};
+    my %builtin = map { $_ => 1 } qw(close open high low volume hl2 hlc3 ohlc4);
+    return undef if $builtin{ lc $pc->{operand} };
+    return $pc->{operand};
+}
+
 sub build_module_source {
     my ($m, $p) = @_;
     my $mid = $m->{module_id};
@@ -177,29 +213,47 @@ sub build_module_source {
     push @lines, "// source_requirements: " . join(', ', @{ $m->{source_requirements} || [] });
     push @lines, "// verification_requirements: " . join(', ', @{ $m->{verification_requirements} || [] });
 
+    # --- condition-driven generation (Phase 9 repair upgrade, RP-002) --------
+    # M-STATE/M-SIGNAL lines are driven by (operand, direction, threshold)
+    # parsed from the plan's signal_architecture condition_verbatim. For the
+    # original 'close crosses over 30' the output is byte-identical to the
+    # pre-upgrade generator (selftest pins the committed source). Unsupported
+    # condition forms die loudly - never silently mis-implemented.
+    my $sig = _primary_signal($p);
+    my $pc  = $sig ? parse_condition_verbatim($sig->{condition_verbatim}) : undef;
+    die "I-COND: condition_verbatim '" . ($sig->{condition_verbatim} // 'undef')
+        . "' is not a supported explicit crossover form (operand crosses over|under THRESHOLD) - record the user decision upstream, never mis-implement silently\n"
+        if defined $sig && !defined $pc;
+    my ($op, $dir, $thr) = defined $pc ? ($pc->{operand}, $pc->{direction}, $pc->{threshold}) : ('', '', '');
+    # external operands are referenced in code by their bound lowercase variable
+    my $code_op = defined $pc ? (defined _external_operand($pc) ? lc $op : $op) : '';
+    my $sv  = defined $sig ? 'signal_' . lc(($sig->{signal_ref} // 'c1') =~ s/-//gr) : 'signal_c1';
+    my $ref = defined $sig ? ($sig->{signal_ref} // 'C-1') : 'C-1';
+
     if ($mid eq 'M-STATE') {
         push @lines, "// Category: STATE - per-bar prior-value / crossover mechanics";
-        push @lines, "// Contract condition (verbatim): close crosses over 30";
-        push @lines, "// Pine v6: bool cannot be na (official migration guide); warm-up tracked via close availability";
+        push @lines, "// Contract condition (verbatim): " . ($sig->{condition_verbatim} // '');
+        push @lines, "// Pine v6: bool cannot be na (official migration guide); warm-up tracked via $code_op availability";
         push @lines, "var bool state_crossover = false";
         push @lines, "// Initialize on first available bar; one logical update per confirmed bar";
         push @lines, "// Edge case E-NA: na values during warm-up keep the state inactive (no signal)";
-        push @lines, "// Edge case E-FIRST: first bar has no previous close, so the state stays inactive";
-        push @lines, "if na(close) or na(close[1])";
+        push @lines, "// Edge case E-FIRST: first bar has no previous $code_op, so the state stays inactive";
+        push @lines, "if na(${code_op}) or na(${code_op}[1])";
         push @lines, "    state_crossover := false";
         push @lines, "else";
-        push @lines, "    state_crossover := close > 30 and close[1] <= 30";
+        my ($gt, $le) = ($dir eq 'over') ? ('>', '<=') : ('<', '>=');
+        push @lines, "    state_crossover := ${code_op} $gt $thr and ${code_op}[1] $le $thr";
     }
     elsif ($mid eq 'M-SIGNAL') {
         push @lines, "// Category: SIGNAL - condition evaluation preserving the exact formalized clause";
-        push @lines, "// Condition C-1 (verbatim): close crosses over 30";
-        push @lines, "// Prerequisites: M-STATE";
-        push @lines, "bool signal_c1 = false";
-        push @lines, "if not na(close) and not na(close[1])";
-        push @lines, "    signal_c1 := state_crossover";
+        push @lines, "// Condition $ref (verbatim): " . ($sig->{condition_verbatim} // '');
+        push @lines, "// Prerequisites: " . join(', ', @{ $sig->{prerequisites} || ['M-STATE'] });
+        push @lines, "bool $sv = false";
+        push @lines, "if not na(${code_op}) and not na(${code_op}[1])";
+        push @lines, "    $sv := state_crossover";
         push @lines, "else";
-        push @lines, "    signal_c1 := false";
-        push @lines, "// Precedence: 1 (sole signal in this plan)";
+        push @lines, "    $sv := false";
+        push @lines, "// Precedence: " . ($sig->{precedence} || 1) . " (sole signal in this plan)";
     }
     elsif ($mid eq 'M-INTEG') {
         push @lines, "// Category: INTEGRATION - wiring + Pine v6 target + edge cases";
@@ -209,7 +263,7 @@ sub build_module_source {
         push @lines, "// Authorized platform-compatibility amendment (user decision, Option A):";
         push @lines, "// minimal neutral output to satisfy TradingView's mandatory indicator-output";
         push @lines, "// rule; no visible plot, no alerts, no semantic change to C-1/E-NA/E-FIRST";
-        push @lines, "plot(signal_c1 ? 1 : 0, display=display.none)";
+        push @lines, "plot($sv ? 1 : 0, display=display.none)";
     }
     else {
         push @lines, "// UNKNOWN MODULE - no source requirements matched";
@@ -231,6 +285,17 @@ sub generate_pine {
     push @src, '';
     my $order = $p->{implementation_order} || [];
     my %modmap = map { $_->{module_id} => $_ } @{ $p->{modules} || [] };
+    my $pc = _primary_signal($p) ? parse_condition_verbatim(_primary_signal($p)->{condition_verbatim}) : undef;
+    my $ext = _external_operand($pc);
+    if (defined $ext) {
+        my $var = lc $ext;
+        my $title = $ext =~ s/_/ /gr;
+        push @src, "// External indicator series binding (formalization variable: '$var')";
+        push @src, "// The ARO script on the user's chart supplies the plot; no value is invented here.";
+        push @src, "// Select the matching ARO plot in the script settings (default: chart close).";
+        push @src, "$var = input.source(close, title=\"$title\")";
+        push @src, "";
+    }
     for my $mid (@$order) {
         my $m = $modmap{$mid};
         push @src, build_module_source($m, $p) if $m;

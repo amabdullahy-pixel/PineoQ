@@ -255,6 +255,25 @@ sub extract {
     }
     for my $i (0 .. $#{ $x->{conditions} }) { $x->{conditions}[$i]{id} = 'C-' . ($i + 1); }
 
+    # --- R3.5 external condition operands (detection only; no invention) -----
+    # A condition subject that is not a built-in source token is an external
+    # indicator series (e.g. 'RSI crosses over 30'). It is recorded as a
+    # declared chart-level input variable so Pre-Verification PC03 can bind
+    # it — the VALUE itself is never invented (binding happens at chart
+    # level via input.source in the emitted Pine).
+    for my $cnd (@{ $x->{conditions} }) {
+        my ($subj) = $cnd->{condition} =~ /^($OPERAND)\s+/ or next;
+        my $key = lc $subj;
+        next if $seen_var{$key};
+        next if grep { lc($_) eq $key } @SRC_TOKENS;
+        $seen_var{$key} = 1;
+        push @{ $x->{variables} }, {
+            name => $key, type => 'series float',
+            description => "external indicator series '$subj' referenced by $cnd->{id} — bound at chart level (input.source); no value invented",
+            source => 'request (verbatim condition subject)',
+        };
+    }
+
     # --- R4 formulas (verbatim expressions; position order) ----------------
     my %seen_f;
     while ($req =~ /$FORM_RE/g) {

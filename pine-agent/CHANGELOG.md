@@ -1969,3 +1969,74 @@ raw AUSDT.P price. `user_supply: ALLOWED_BY_RCA_F-002`;
   requires the user's A-001 series decision, and optionally the A-002
   cross-bar semantic confirmation). Phase 16+ NOT EXECUTED. No Pine source,
   plan, or upstream contract modified by Phase 15.
+
+## 2.10.0 - PHASE 15 CONTINUATION: Repaired C-1 Implemented Through the Pipeline (2026-09-12)
+
+### User decisions (recorded verbatim, resolving the Phase 15 open items)
+
+> ARO series: Pullback Score
+> Bar semantics: Keep it as a cross
+
+- **A-001 resolved:** the repaired operand is the ARO **Pullback Score**
+  series (normalized bounded scale from the fingerprinted KCEX dataset).
+- **A-002 resolved:** keep **cross-over** semantics (a fire on the bar where
+  the series crosses above 30 is accepted, including 2026-09-12T00:42:00Z,
+  the 3m bar immediately before the crosshair bar 00:45).
+
+### Delivered (identity chain, every contract engine-generated and committed)
+
+- Routing: **rout-3e209e603a09** (ready, minimal S set).
+- Formalization: **form-43313af4902b** (req-a2f779518607) - C-1 verbatim
+  'Pullback_Score crosses over 30', declared variable
+  'pullback_score' (external series, bound at chart level; no value
+  invented), zero unresolved ambiguities, implementation_allowed true.
+- Pre-Verification: **pre-938a24f934d6** (passed).
+- Feasibility: **feas-83934a7c07e3** (passed).
+- Planning: **plan-aa832ef59603** (signal_architecture carries the verbatim
+  condition).
+- Implementation: **impl-ff9e6cad4276** -
+  `implementation/phase9_repaired_pine.pine` (sha256 `06bf4e43...b6f5`),
+  `implementation/phase9_repair_result.yaml`,
+  full chain stored under `implementation/repair_chain/`.
+- The repaired Pine binds the external series explicitly:
+  `pullback_score = input.source(close, title="Pullback Score")` - the user
+  selects the ARO script's Pullback Score plot in the script settings; the
+  generator never invents indicator values. C-1 evaluates
+  `pullback_score > 30 and pullback_score[1] <= 30` with the original
+  NA/warm-up guards. compile_status: UNKNOWN_REQUIRES_EXTERNAL_VALIDATION
+  (no local Pine compiler; user-reported TradingView compile required for
+  validation, mirroring the Phase 10 precedent).
+
+### Fixed (Phase-9-owned generator upgrades, Option A precedent; behavior-preserving for the original plan)
+
+1. `formalization/formalize.pl` R3.5 - a condition subject that is not a
+   built-in source token is now recorded as a declared external chart-input
+   variable (detection only, no value invention); PC03 B-VAR-MISSING then
+   binds it. Selftests 13/13 still green; pre-verify 20/20 (its T-PRE-008
+   missing-variable fixture is static and still exercises the blocker).
+2. `implementation/implement.pl` - the generator no longer hardcodes the
+   C-1 template: M-STATE/M-SIGNAL lines are driven by (operand, direction,
+   threshold) parsed from the plan's condition_verbatim; unsupported forms
+   die loudly (never silently mis-implemented); external operands get the
+   input.source binding block. **Byte-compat pin:** regenerating from the
+   ORIGINAL phase9_authoritative_plan.yaml reproduces the committed
+   phase9_pine.pine byte-identically (sha256 `d62af444...316e4`).
+   Perl `${var}` interpolation fix pinned implicitly by the pin.
+
+### Verification evidence
+
+- Regression sweep: all 11 engines green (router 8, formalization 13,
+  pre-verification 20, feasibility 22, planning 27, implementation 8,
+  Phase 11 intake REV2, Phase 12 111, Phase 13 59/59, Phase 14 13/13,
+  Phase 15 14/14).
+- Determinism: repaired Pine regeneration x2 byte-identical.
+- Integrity: Phase 8/9 production artifacts (plan + phase9_pine.pine)
+  untouched - the repair is a NEW implementation (impl-ff9e6cad4276)
+  alongside them; zero Phase 10-14 artifacts modified.
+
+### Boundary
+
+- Post-Verification (Phase 10 REV 5) NOT EXECUTED: no local Pine compiler;
+  the repaired script must be compiled by the user in TradingView (fresh
+  compile + chart attach), after which the validated impl-ff9e6cad4276 can
+  be confirmed against the reconstructed trace. Phase 16+ NOT EXECUTED.

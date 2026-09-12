@@ -1,0 +1,105 @@
+routing:
+  contract_version: 'routing/2'
+  routing_status: 'ready'
+  request_class: 'conceptual'
+  primary_domain: ''
+  secondary_domains: []
+  operational_intent: 'Routed as ''conceptual'' request; select the minimum sufficient Skill set from the Registry.'
+  selected_skills:
+    - { id: 'pine-version-intelligence', reason: 'class core (conceptual) per skill-routing rule 2/3', match: 'match' }
+  dependency_skills:
+    []
+  excluded_skills:
+    - { id: 'pine-language-core', reason: 'no_match — irrelevant' }
+    - { id: 'pine-type-system', reason: 'no_match — irrelevant' }
+    - { id: 'pine-data-structures', reason: 'no_match — irrelevant' }
+    - { id: 'pine-functions-libraries', reason: 'no_match — irrelevant' }
+    - { id: 'pine-v6', reason: 'no_match — irrelevant' }
+    - { id: 'tradingview-execution-model', reason: 'no_match — irrelevant' }
+    - { id: 'indicator-strategy-library-architecture', reason: 'no_match — irrelevant' }
+    - { id: 'strategy-engine', reason: 'no_match — irrelevant' }
+    - { id: 'drawing-and-visualization', reason: 'no_match — irrelevant' }
+    - { id: 'alerts-and-webhooks', reason: 'no_match — irrelevant' }
+    - { id: 'repainting-and-lookahead', reason: 'no_match — irrelevant' }
+    - { id: 'mtf-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'data-integrity', reason: 'no_match — irrelevant' }
+    - { id: 'multi-symbol-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'mathematical-foundation', reason: 'no_match — irrelevant' }
+    - { id: 'linear-algebra', reason: 'no_match — irrelevant' }
+    - { id: 'calculus-and-optimization', reason: 'no_match — irrelevant' }
+    - { id: 'analytical-geometry', reason: 'no_match — irrelevant' }
+    - { id: 'numerical-methods', reason: 'no_match — irrelevant' }
+    - { id: 'statistics-core', reason: 'no_match — irrelevant' }
+    - { id: 'probability', reason: 'no_match — irrelevant' }
+    - { id: 'statistical-distributions', reason: 'no_match — irrelevant' }
+    - { id: 'regression-correlation', reason: 'no_match — irrelevant' }
+    - { id: 'statistical-testing', reason: 'no_match — irrelevant' }
+    - { id: 'time-series-analysis', reason: 'no_match — irrelevant' }
+    - { id: 'stochastic-processes', reason: 'no_match — irrelevant' }
+    - { id: 'monte-carlo-and-resampling', reason: 'no_match — irrelevant' }
+    - { id: 'financial-mathematics', reason: 'no_match — irrelevant' }
+    - { id: 'risk-management', reason: 'no_match — irrelevant' }
+    - { id: 'position-sizing', reason: 'no_match — irrelevant' }
+    - { id: 'performance-metrics', reason: 'no_match — irrelevant' }
+    - { id: 'trade-management', reason: 'no_match — irrelevant' }
+    - { id: 'technical-analysis-core', reason: 'no_match — irrelevant' }
+    - { id: 'trend-indicators', reason: 'no_match — irrelevant' }
+    - { id: 'momentum-indicators', reason: 'no_match — irrelevant' }
+    - { id: 'volatility-indicators', reason: 'no_match — irrelevant' }
+    - { id: 'volume-analysis', reason: 'no_match — irrelevant' }
+    - { id: 'price-action-patterns', reason: 'no_match — irrelevant' }
+    - { id: 'market-structure', reason: 'no_match — irrelevant' }
+    - { id: 'liquidity-and-price-structure', reason: 'no_match — irrelevant' }
+    - { id: 'fibonacci-and-harmonic', reason: 'no_match — irrelevant' }
+    - { id: 'advanced-market-geometry', reason: 'no_match — irrelevant' }
+    - { id: 'quantitative-analysis', reason: 'no_match — irrelevant' }
+    - { id: 'signal-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'signal-fusion', reason: 'no_match — irrelevant' }
+    - { id: 'regime-detection', reason: 'no_match — irrelevant' }
+    - { id: 'adaptive-systems', reason: 'no_match — irrelevant' }
+    - { id: 'signal-processing', reason: 'no_match — irrelevant' }
+    - { id: 'statistical-arbitrage', reason: 'no_match — irrelevant' }
+    - { id: 'backtesting-science', reason: 'no_match — irrelevant' }
+    - { id: 'optimization-and-calibration', reason: 'no_match — irrelevant' }
+    - { id: 'walk-forward-and-validation', reason: 'no_match — irrelevant' }
+    - { id: 'overfitting-and-robustness', reason: 'no_match — irrelevant' }
+    - { id: 'macro-economics', reason: 'no_match — irrelevant' }
+    - { id: 'intermarket-analysis', reason: 'no_match — irrelevant' }
+    - { id: 'market-microstructure', reason: 'no_match — irrelevant' }
+    - { id: 'asset-class-specialization', reason: 'no_match — irrelevant' }
+    - { id: 'behavioral-finance', reason: 'no_match — irrelevant' }
+    - { id: 'market-psychology', reason: 'no_match — irrelevant' }
+    - { id: 'system-psychology', reason: 'no_match — irrelevant' }
+    - { id: 'research-methodology', reason: 'no_match — irrelevant' }
+    - { id: 'hypothesis-and-formula-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'natural-language-to-math', reason: 'no_match — irrelevant' }
+    - { id: 'research-to-code', reason: 'no_match — irrelevant' }
+    - { id: 'falsification-and-counterexamples', reason: 'no_match — irrelevant' }
+    - { id: 'causal-reasoning', reason: 'no_match — irrelevant' }
+    - { id: 'pine-code-architecture', reason: 'no_match — irrelevant' }
+    - { id: 'pine-performance-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'pine-debugging-and-testing', reason: 'no_match — irrelevant' }
+    - { id: 'code-review-and-refactoring', reason: 'no_match — irrelevant' }
+    - { id: 'requirements-engineering', reason: 'no_match — irrelevant' }
+    - { id: 'project-knowledge-management', reason: 'no_match — irrelevant' }
+    - { id: 'context-compression', reason: 'no_match — irrelevant' }
+    - { id: 'skill-routing', reason: 'no_match — irrelevant' }
+    - { id: 'documentation-verification', reason: 'no_match — irrelevant' }
+    - { id: 'pine-project-documentation', reason: 'no_match — irrelevant' }
+  coverage:
+    required_capabilities: []
+    covered_capabilities: ['pine-version-intelligence']
+    missing_capabilities: []
+  conflicts: []
+  ambiguity: []
+  reason: 'minimum sufficient set of 1 skill(s) covers the ''conceptual'' request with dependency closure complete; no conflicts, no ambiguity, no coverage gaps; handoff to Formalization permitted'
+  estimated_context_size: 'S + ~2.2k tokens'
+  routing_trace:
+    classification: 'markers fired: ; primary=conceptual'
+    matching: 'candidates graded: 77 eligible; '
+    minimal_set_reasoning: 'core(conceptual) + trigger-matched topics; caps enforced (max_selected_skills=5); tie-breaks: priority > domain-breadth > dep-count > id lexicographic; no merges'
+    dependency_resolution: 'no mandatory dependencies in selected set; closure trivially complete (registry has no mandatory edges)'
+    redundancy_analysis: 'no overlap decision applied; no removals; no merges performed'
+  downstream:
+    next_stage: FORMALIZATION
+    allowed: true
