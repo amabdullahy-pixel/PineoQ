@@ -15,7 +15,12 @@
 #   verdict validated) -> incident (Phase 11) -> data (Phase 12)
 # ==============================================================================
 
-schema_version: "1.0"
+schema_version: "1.1"
+# v1.1 (SS54): additive multi-timeframe extension — per-dataset declared identity
+# fields (schema, ts_convention, symbol, exchange, market_type, timeframe,
+# timezone, session, has_volume), the cross_timeframe section, and DA-G17..G20.
+# Single-dataset contracts keep the v1.0 shape with NOT_APPLICABLE xtf defaults;
+# data_contract_id remains deterministic and content-addressed.
 stage: data_acquisition_and_alignment
 predecessor: incident_intake
 successor: execution_trace_and_debug
@@ -90,6 +95,30 @@ datasets:
     coverage_end:
     raw_fingerprint:           # sha256 of the raw bytes as supplied
     normalized_fingerprint:    # sha256 of the canonical normalized body (or UNAVAILABLE)
+    # --- SS54 rev2 additive per-dataset identity fields ---
+    schema:                    # UNKNOWN | header:ts,open,high,low,close[,volume][+extraneous(N)]
+    ts_convention:             # declared convention; UNKNOWN unless explicitly supplied (never inferred)
+    symbol:                    # declared symbol or UNKNOWN (never inferred)
+    exchange:                  # declared exchange or UNKNOWN (never inferred)
+    market_type:               # SPOT | FUTURES_PERPETUAL | CFD | SYNTHETIC_FEED | UNKNOWN
+    timeframe:                 # declared timeframe or UNKNOWN (never inferred; never resampled)
+    timezone:                  # declared timezone or UNKNOWN (never inferred)
+    session:                   # declared session or UNKNOWN (never inferred)
+    has_volume:                # true | false (from parsed schema)
+
+# ------------------------------------------------------- cross_timeframe (v1.1) --
+# SS54: multiple qualified datasets may belong to one incident; each stays an
+# independent dataset with independent provenance. Rows of different timeframes
+# are never compared, merged, resampled, or treated as contradictory.
+cross_timeframe:
+  datasets:                    # number of supplied datasets
+  timeframes_declared: []      # verbatim declared timeframes (order = input order)
+  identity_consistency:        # CONSISTENT | CONSISTENT_WITH_WARNINGS | INCONSISTENT | NOT_APPLICABLE (single dataset)
+  timeframe_identity:          # ESTABLISHED | PARTIAL | NOT_APPLICABLE
+  coverage_relationship:       # DESCRIBED (per-TF, never merged) | NOT_APPLICABLE
+  coverage:                    # per-TF [{timeframe, dataset_id, start, end, rows}]
+  required_timeframe_map:      # --mtf list; each required TF -> dataset_id or MISSING (no substitution)
+  findings: []                 # DA-G17..G20 findings (identity/tf/coverage/tscov)
 
 # ------------------------------------------------------------ transformations --
 # Every transformation is recorded; raw data is never destroyed (prompt §16/§23).

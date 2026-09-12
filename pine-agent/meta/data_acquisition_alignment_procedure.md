@@ -224,16 +224,62 @@ engines. CLI:
 perl data_acquisition/data_acquisition.pl
   --incident FILE            Phase 11 contract (required)
   [--data FILE]...           CSV dataset: ts,open,high,low,close,volume
+                             (header row allowed: time/ts/timestamp,open,high,
+                             low,close[,volume]; extra columns ignored but
+                             recorded in the dataset schema)
   [--source NAME]            source label for the next --data
   [--authority AUTHORITATIVE|QUALIFIED_EXTERNAL|USER_PROVIDED|DERIVED|UNKNOWN]
   [--provider NAME] [--retrieval METHOD] [--retrieved-at TS]
   [--timezone TZ] [--exchange EX] [--market-type TYPE]
+  [--symbol SY] [--timeframe TF] [--session S] [--expect-sha256 HASH]
   [--warmup N] [--mtf TF,TF,...]
   [--out FILE] [--help] [--version] [--selftest]
   [--gate-check --data CONTRACT_FILE]
 ```
 
+Per-dataset option grouping (SS54): every option following a `--data FILE`
+attaches to THAT dataset until the next `--data`. Without an explicit option,
+dataset symbol/exchange/timeframe default from the incident target where
+declared; timezone/session/market-type stay UNKNOWN unless explicitly
+supplied — never inferred.
+
 Exit codes: 0 = downstream open; 2 = downstream closed/invalid; die on
 internal errors (distinct non-zero). No external network access exists in
 this environment: without an explicit `--data` source the honest outcome is
 INSUFFICIENT_DATA (no-data environment, prompt §28) — never synthetic data.
+
+## 21. MULTI-TIMEFRAME INGESTION (SS54, schema v1.1)
+
+Additive extension; single-dataset behavior is unchanged and remains the
+backward-compatible default path.
+
+1. Multiple `--data` inputs are accepted; each stays an INDEPENDENT dataset
+   with independent provenance (dataset_id, source, sha256, schema, declared
+   symbol/exchange/market/timeframe/timezone/session).
+2. Raw bytes are preserved byte-for-byte per dataset; duplicate raw-byte
+   sha256 across datasets is mechanically rejected (INVALID_INPUT).
+   `--expect-sha256` pins each dataset's expected raw fingerprint; a mismatch
+   is mechanically rejected.
+3. Header CSVs are accepted; `schema` records the normalized header layout
+   plus extraneous-column count. Extraneous columns are IGNORED, never merged.
+4. Cross-timeframe checks (new DA-G17..G20):
+   - DA-G17 cross_dataset_identity: declared symbol inconsistency across
+     datasets is a BLOCKER; a declared dataset symbol contradicting the
+     incident target symbol is a BLOCKER; declared exchange/market-type/
+     timestamp-convention differences are warnings (never silently unified).
+   - DA-G18 timeframe_identity: declared timeframes recorded verbatim;
+     UNKNOWN stays UNKNOWN; duplicates are warnings; timeframes are never
+     inferred and never resampled.
+   - DA-G19 coverage_relationship: per-TF coverage described descriptively;
+     contradiction analysis (same-TF OHLCV disagreement) runs ONLY between
+     datasets of the same declared timeframe; cross-TF rows are never
+     compared, merged, or resampled.
+   - DA-G20 required_timeframe_mapping: each `--mtf` timeframe maps to the
+     supplied dataset with that declared timeframe, or is recorded MISSING;
+     substitution is forbidden; any MISSING required TF keeps the contract
+     INSUFFICIENT_DATA.
+5. Each dataset is integrity-checked (DI01–DI10) against ITS OWN declared
+   timeframe; a 60m dataset is never cadence-checked on a 5m grid.
+6. data_contract_id remains deterministic and content-addressed; the v1.1
+   identity body adds per-dataset declared identity and the cross_timeframe
+   section (fixed field order).

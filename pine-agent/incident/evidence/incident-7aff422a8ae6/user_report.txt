@@ -1,0 +1,1 @@
+Identity-corrected re-intake of the same visual evidence package (supersedes the BTCUSDT intake incident-940ef2698dda only as a target-identity correction): in the highlighted region a BUY signal should have appeared, but no visible BUY marker is detected in the inspected region on the AUSDT.P KCEX chart.

@@ -29,6 +29,9 @@
 #          --expected TEXT      --observed TEXT  --interpretation TEXT
 #          --region TEXT        (verbatim user region reference)
 #          --artifact PATH      (inspected project artifact, read-only)
+#          --supersedes ID      (incident id of a superseded incident; recorded
+#                                as a link, never mutated — e.g. an identity-
+#                                corrected re-intake keeps the old incident intact)
 #          --out FILE
 # Output : incident contract (schema v1.0) + exit code.
 #   exit 0  READY | READY_WITH_WARNINGS  (downstream_allowed true)
@@ -155,6 +158,7 @@ sub parse_input {
         region              => $i{region},
         region_confidence   => $i{region_confidence},
         project_artifact    => $i{project_artifact},
+        supersedes          => $i{supersedes},           # link to a superseded incident (recorded, never mutated)
     };
 }
 
@@ -186,6 +190,11 @@ sub check_g1 {
         next unless defined $inp->{$k};
         $inp->{$k} =~ s/^\s+//; $inp->{$k} =~ s/\s+$//;
         add_blocker('INT-G1', "field '$k' is empty after trimming") if $inp->{$k} eq '';
+    }
+    if (defined $inp->{supersedes}) {
+        $inp->{supersedes} =~ s/^\s+//; $inp->{supersedes} =~ s/\s+$//;
+        add_blocker('INT-G1', "supersedes must be a well-formed incident id (incident-<12 hex>)")
+            unless $inp->{supersedes} =~ /^incident-[0-9a-f]{12}$/;
     }
     return;
 }
@@ -566,6 +575,7 @@ sub incident_text {
 
     return _finalize({
         user_report_bytes_sha256 => user_report_bytes_sha256($inp->{user_report}),
+        supersedes               => (defined $inp->{supersedes} && $inp->{supersedes} =~ /\S/) ? $inp->{supersedes} : undef,
         findings                 => [],
     }, $inp, $imgs, $loc, $eo_ok);
 }
@@ -585,7 +595,7 @@ sub result_to_yaml {
     push @o, 'incident:';
     push @o, '  incident_id: ' . _q($r->{incident_id});
     push @o, '  incident_version: ' . _q($r->{incident_version});
-    push @o, '  supersedes: null';
+    push @o, '  supersedes: ' . (defined $r->{supersedes} && length $r->{supersedes} ? _q($r->{supersedes}) : 'null');
     push @o, '  sequence: null';
     push @o, '  created_from:';
     push @o, '    user_report: ' . _q($r->{user_report} // 'null');
@@ -733,6 +743,7 @@ sub main {
         elsif ($a eq '--image')        { push @image_args, shift @ARGV; }
         elsif ($a eq '--out')          { $out_file = shift @ARGV; }
         elsif ($a eq '--incident')     { $incident_file = shift @ARGV; }
+        elsif ($a eq '--supersedes')   { $kv{supersedes} = shift @ARGV; }
         elsif ($a eq '--gate-check')   { $gate = 1; }
         elsif ($a eq '--selftest')     { my $st = selftest(); exit $st; }
         elsif ($a =~ /^--(symbol|exchange|timeframe|timezone|implementation-id|expected|observed|interpretation|region|artifact)$/) {
@@ -773,8 +784,8 @@ sub main {
         push @{ $spec{image_observations}{ $img } }, { statement => $stmt, classification => $cls, confidence => $conf, location => $img };
     }
     my %kmap = (symbol => 'symbol', exchange => 'exchange', timeframe => 'timeframe', timezone => 'timezone',
-                'implementation-id' => 'implementation_id', expected => 'expected', observed => 'observed',
-                interpretation => 'interpretation', region => 'region', artifact => 'project_artifact');
+                'implementation-id' => 'implementation_id', expected => 'expected', observed => 'observed',                 interpretation => 'interpretation', region => 'region', artifact => 'project_artifact',
+                 supersedes => 'supersedes');
     for my $k (keys %kmap) { $spec{ $kmap{$k} } = $kv{$k} if defined $kv{$k}; }
 
     my $r = incident_text(\%spec);
@@ -808,6 +819,7 @@ sub selftest {
             observed      => $o{observed},
             interpretation => ($o{interp} // $o{interpretation}),
             region        => $o{region},
+            supersedes    => $o{supersedes},
         );
         $s{image_observations} = { 'IMG-001' => $o{image_obs} } if $o{image_obs};
         return \%s;
@@ -1037,8 +1049,162 @@ sub selftest {
         $ok->($r->{phase11_status} =~ /^READY/, 'NG-008 intake completes without repairing anything');
     }
 
+    # ===========================================================================
+    # REV 2 - corrected-identity re-intake (AUSDT.P / KCEX): the previous
+    # incident (BTCUSDT) must stay preserved; the new incident gets its own
+    # deterministic id; nothing is inherited from the old target.
+    # ===========================================================================
+    my $OLD_IID   = 'incident-940ef2698dda';
+    my $IMG_OLD   = '04daea13253a1e2ef3c23532d3b0fc21099665d8cefb1bcb6c3a6dc98d10178b';  # evidence screenshot sha256
+    my $ARCHIVE   = dirname(__FILE__) . '/archive/phase11_incident_BTCUSDT_940ef2698dda.yaml';
+    my $SCREENSHOT = dirname(__FILE__) . '/evidence/Screenshot 2026-09-11 074631.png';
+    my $raw_sha = sub { my $f = shift; return '' unless -f $f; open my $fh, '<:raw', $f or return ''; local $/; my $d = <$fh>; close $fh; return sha256_hex($d); };
+    my $corr = sub {
+        my (%o) = @_;
+        return $mk->(
+            report    => $o{report} // 'Identity-corrected re-intake of the same evidence package: in the highlighted region a BUY signal should have appeared but no visible BUY marker is detected in the inspected region.',
+            images    => [ { path => $SCREENSHOT, sha256 => $IMG_OLD } ],
+            symbol    => $o{symbol} // 'AUSDT.P',
+            exchange  => $o{exchange} // 'KCEX',
+            timeframe => $o{timeframe} // '5m',
+            expected  => $o{expected} // 'BUY signal should have appeared',
+            observed  => $o{observed} // 'No visible BUY marker detected in the inspected region',
+            region    => $o{region} // 'lower volume panel, highlighted zone',
+            supersedes => $o{supersedes} // $OLD_IID,
+        );
+    };
+
+    # INT-REV2-001/002: corrected target accepted verbatim, downstream open
+    {
+        my $r = $run->($corr->());
+        $ok->($r->{phase11_status} =~ /^READY/, 'INT-REV2-001 corrected AUSDT.P target accepted');
+        $ok->($r->{downstream_allowed} eq 'true' && $r->{next_stage} eq 'DATA_ACQUISITION_AND_ALIGNMENT', 'INT-REV2-001 downstream open for Phase 12');
+        $ok->($r->{symbol} eq 'AUSDT.P' && $r->{symbol_status} eq 'USER_REPORTED', 'INT-REV2-001 AUSDT.P preserved verbatim');
+        $ok->($r->{exchange} eq 'KCEX' && $r->{exchange_status} eq 'USER_REPORTED', 'INT-REV2-002 KCEX exchange preserved');
+    }
+
+    # INT-REV2-003/004: previous incident preserved; new id differs; supersedes link only
+    {
+        my $a0 = eval { _slurp($ARCHIVE) } // '';
+        my $r = $run->($corr->());
+        my $a1 = eval { _slurp($ARCHIVE) } // '';
+        $ok->($a0 ne '' && $a0 eq $a1, 'INT-REV2-003 previous BTCUSDT incident preserved (archive byte-identical)');
+        $ok->($r->{incident_id} ne $OLD_IID, 'INT-REV2-004 new incident_id differs from old incident_id');
+        $ok->(($r->{supersedes} // '') eq $OLD_IID, 'INT-REV2-004 supersedes records the link, nothing mutated');
+    }
+
+    # INT-REV2-005: target identity does not inherit BTCUSDT (old target != new target)
+    {
+        my $old_text = eval { _slurp($ARCHIVE) } // '';
+        my ($old_sym) = $old_text =~ /^    symbol: '([^']*)'/m;
+        my $r = $run->($corr->());
+        $ok->(defined $old_sym && $old_sym eq 'BTCUSDT', 'INT-REV2-005 old incident target read as BTCUSDT');
+        $ok->($r->{symbol} ne $old_sym && $r->{symbol} eq 'AUSDT.P', 'INT-REV2-005 old target != new target; no inheritance');
+        $ok->(result_to_yaml($r) !~ /BTCUSDT/, 'INT-REV2-005 corrected contract carries no BTCUSDT anywhere');
+    }
+
+    # INT-REV2-006/007/008: screenshot as CHART_IMAGE evidence; never OHLCV; no causal wording
+    {
+        my $r = $run->($corr->());
+        my (@ce) = grep { ($_->{source} // '') eq 'CHART_IMAGE' } @{ r_evidence() };
+        $ok->(scalar @ce >= 1 && (grep { ($_->{source_image} // '') eq 'IMG-001' } @ce) >= 1, 'INT-REV2-006 screenshot registered as CHART_IMAGE evidence (IMG-001)');
+        my $out = result_to_yaml($r);
+        $ok->($out !~ /^\s{4,}(open|high|low|close|volume):/m && $out !~ /\bOHLC(V)?\b/i, 'INT-REV2-007 screenshot not treated as authoritative OHLCV');
+        $ok->($out !~ /root cause/i, 'INT-REV2-008 no causal/root-cause wording accepted in engine output');
+    }
+
+    # INT-REV2-009: localization uncertainty preserved (no invented bar/timestamp)
+    {
+        my $r = $run->($corr->());
+        $ok->($r->{localization}{method} eq 'USER_POINTED' && $r->{localization}{precision} eq 'APPROXIMATE', 'INT-REV2-009 localization stays approximate (USER_POINTED)');
+        $ok->($r->{localization}{bar_index} eq 'UNKNOWN' && $r->{localization}{timestamp} eq 'UNKNOWN', 'INT-REV2-009 bar/timestamp stay UNKNOWN');
+    }
+
+    # INT-REV2-010: deterministic three-run identity
+    {
+        my $spec = $corr->();
+        my @ids  = map { $run->($spec)->{incident_id} } 1 .. 3;
+        $ok->($ids[0] eq $ids[1] && $ids[1] eq $ids[2] && $ids[0] =~ /^incident-[0-9a-f]{12}$/, 'INT-REV2-010 deterministic three-run identity');
+        my @ys  = map { result_to_yaml($run->($spec)) } 1 .. 2;
+        $ok->($ys[0] eq $ys[1], 'INT-REV2-010 byte-identical contracts across runs');
+    }
+
+    # INT-REV2-011: Phase 1-10 artifacts unchanged (Pine d62af444..., Phase 10 still validated)
+    {
+        my $ph = $raw_sha->('implementation/phase9_pine.pine');
+        $ok->($ph =~ /^d62af444/, 'INT-REV2-011 Phase 9 Pine hash unchanged (d62af444...)');
+        my $p10 = eval { _slurp('verification/phase10_post_verification_result.yaml') } // '';
+        $ok->($p10 =~ /^\s{2}verdict:\s*validated/m, 'INT-REV2-011 Phase 10 result still validated');
+    }
+
+    # INT-REV2-012: previous Phase 11 incident + evidence byte-unchanged
+    {
+        $ok->($raw_sha->($ARCHIVE) eq '2c6822dc6d063fd3170667ce8054658c2a6a64f1421c4c7a3f90d0d82bb390b4', 'INT-REV2-012 archived BTCUSDT incident byte-unchanged');
+        $ok->($raw_sha->($SCREENSHOT) eq $IMG_OLD, 'INT-REV2-012 evidence screenshot byte-unchanged');
+    }
+
+    # NG-REV2-001: BTCUSDT silently substituted for AUSDT.P
+    {
+        my $r = $run->($corr->(report => 'Corrected re-intake: a BUY signal was expected in the region; none is visible.'));
+        $ok->($r->{symbol} eq 'AUSDT.P', 'NG-REV2-001 target is AUSDT.P, never substituted');
+        $ok->(result_to_yaml($r) !~ /BTCUSDT/, 'NG-REV2-001 no BTCUSDT substitution anywhere in the contract');
+    }
+
+    # NG-REV2-002: AUSDT.P silently changed to another symbol (normalization forbidden)
+    {
+        my $r = $run->($corr->());
+        my $out = result_to_yaml($r);
+        $ok->(index($out, q{'AUSDT.P'}) >= 0, 'NG-REV2-002 AUSDT.P preserved verbatim');
+        $ok->($out !~ /AUSDT(?!\.P)/, 'NG-REV2-002 no normalization drops the .P suffix');
+    }
+
+    # NG-REV2-003: KCEX omitted must stay UNKNOWN (never inferred from unrelated evidence)
+    {
+        my $r = $run->($mk->(
+            report    => 'Identity-corrected re-intake; no exchange supplied.',
+            images    => [ { path => $SCREENSHOT, sha256 => $IMG_OLD } ],
+            symbol    => 'AUSDT.P',
+            timeframe => '5m',
+            expected  => 'BUY signal should have appeared',
+            observed  => 'No visible BUY marker detected in the inspected region',
+            region    => 'lower volume panel, highlighted zone',
+            supersedes => $OLD_IID,
+        ));
+        $ok->($r->{exchange} eq 'UNKNOWN' && $r->{exchange_status} eq 'UNKNOWN', 'NG-REV2-003 KCEX not inferred when omitted');
+    }
+
+    # NG-REV2-004: screenshot converted into OHLCV
+    {
+        my $r = $run->($corr->());
+        my $out = result_to_yaml($r);
+        $ok->($out !~ /\b(open|high|low|close|volume):\s*[0-9]/, 'NG-REV2-004 no OHLCV values derived from the screenshot');
+        $ok->(!(grep { ($_->{classification} // '') eq 'OBSERVED' && ($_->{statement} // '') =~ /[0-9]{3,}/ } @{ r_evidence() }), 'NG-REV2-004 no numeric OHLC claims in evidence');
+    }
+
+    # NG-REV2-005: causal/root-cause claim inserted
+    {
+        my $r = $run->($corr->(observed => 'root cause: the volume condition blocked the marker'));
+        $ok->($r->{phase11_status} eq 'BLOCKED', 'NG-REV2-005 causal/root-cause claim rejected (BLOCKED)');
+        $ok->((grep { ($_->{code} // '') eq 'B-INTAKE' } @{ $r->{blockers} }) >= 1, 'NG-REV2-005 firewall blocker recorded');
+    }
+
+    # NG-REV2-006: previous incident overwritten
+    {
+        my $h0 = $raw_sha->($ARCHIVE);
+        $run->($corr->());
+        $run->($corr->(symbol => 'ETHUSDT.P'));
+        my $h1 = $raw_sha->($ARCHIVE);
+        $ok->($h0 ne '' && $h0 eq $h1, 'NG-REV2-006 archived incident not overwritten by any intake');
+    }
+
+    # NG-REV2-007: old incident_id reused
+    {
+        my $r = $run->($corr->());
+        $ok->($r->{incident_id} ne $OLD_IID, 'NG-REV2-007 old incident_id never reused');
+    }
+
     print "SELFTEST: $pass passed, $fail failed\n";
-    print "All INT-001..010 + NG-001..008 acceptance cases pass (incident contract v1.0).\n" if !$fail;
+    print "All INT-001..010 + NG-001..008 + INT-REV2-001..012 + NG-REV2-001..007 acceptance cases pass (incident contract v1.0, REV 2 corrected identity).\n" if !$fail;
     return $fail ? 1 : 0;
 }
 

@@ -1554,3 +1554,180 @@ Chronological, append-only. Never rewrite or delete historical entries.
   change), Phase 11 intake (47/47), Phase 12 (71/71).
 - Integrity: zero Phase 1-12 artifacts modified; only new Phase 13-owned
   artifacts (trace/, meta procedure, bookkeeping) added.
+
+## 2.4.0 - PHASE 12 rev2: Multi-Timeframe Data Ingestion (SS54) (2026-09-12)
+
+### Delivered
+
+- `data_acquisition/data_acquisition.pl` rev2 (schema v1.1, additive):
+  multiple qualified `--data` CSV inputs per incident, each preserved as an
+  INDEPENDENT dataset with independent provenance. Per-dataset record now
+  carries dataset_id, source path/reference, raw sha256, declared symbol,
+  exchange, market/instrument type, timeframe, timezone, session, timestamp
+  convention, schema (header-aware parse: time/ts/timestamp,open,high,low,
+  close[,volume]; extra columns IGNORED but recorded as +extraneous(N)),
+  row count, first/last timestamp, and has_volume. Unknown metadata stays
+  UNKNOWN — never inferred.
+- New mechanical checks DA-G17..DA-G20:
+  DA-G17 cross_dataset_identity (declared symbol inconsistency across
+  datasets = BLOCKER; declared dataset symbol contradicting the incident
+  target symbol = BLOCKER; declared exchange/market-type/timestamp-
+  convention differences = warnings, never silently unified);
+  DA-G18 timeframe_identity (declared timeframes verbatim, UNKNOWN stays
+  UNKNOWN, duplicates warned, never inferred/resampled);
+  DA-G19 coverage_relationship (per-TF coverage described; same-TF-only
+  OHLCV contradiction analysis — cross-TF rows are never compared, merged,
+  or resampled);
+  DA-G20 required_timeframe_mapping (--mtf list maps each required
+  timeframe to the dataset with that declared timeframe or records MISSING;
+  substitution forbidden; any MISSING required TF keeps the contract
+  INSUFFICIENT_DATA).
+- Duplicate raw-byte datasets are mechanically rejected (INVALID_INPUT);
+  `--expect-sha256` pins each dataset's expected raw fingerprint (mismatch
+  = INVALID_INPUT, verified fact on match).
+- Each dataset is integrity-checked (DI01-DI10) against ITS OWN declared
+  timeframe; a 60m dataset is never cadence-checked on a 5m grid. DI06 now
+  fails unparseable timestamps; DI07 findings rendering fixed (nested
+  arrayref bug); per-dataset CLI option grouping (`--data FILE` followed by
+  its own --symbol/--timeframe/--exchange/... options).
+- `data/contract_schema.yaml` v1.1: additive per-dataset identity fields +
+  `cross_timeframe` section (datasets, timeframes_declared,
+  identity_consistency, timeframe_identity, coverage_relationship,
+  per-TF coverage, required_timeframe_map, findings).
+- `meta/data_acquisition_alignment_procedure.md`: SS21 multi-timeframe
+  ingestion binding procedure + updated CLI section (per-dataset option
+  grouping, header CSVs, --expect-sha256).
+- Selftest extended: MTD-001..016 (four valid datasets, duplicate dataset,
+  duplicate timeframe, missing timeframe, mismatched symbol, symbol-vs-
+  target contradiction, malformed CSV, missing required columns, invalid
+  timestamps, per-TF coverage, unknown metadata, expect-sha256 mismatch/
+  match, fixture firewall in multi-dataset input, deterministic four-dataset
+  contract, backward-compatible single-dataset path) + REG-001..002
+  (upstream Phase 10 gate regression, rev1 invariant regression).
+- Real-data ingestion verified: the four user-supplied KCEX chart exports
+  (data/raw/KCEX_AUSDT.P, 1|5|15|60.csv) ingest deterministically; per-TF
+  mapping 1m->DS-001, 5m->DS-002, 15m->DS-003, 60m->DS-004; raw fingerprints
+  recorded; result BLOCKED — see Phase 12 boundary note below.
+
+### Semantics preserved
+
+- Single-CSV backward compatibility: one dataset keeps the v1.0 gate and
+  NOT_APPLICABLE cross_timeframe defaults; data_contract_id remains
+  deterministic and content-addressed (v1.1 identity body adds per-dataset
+  declared identity and the cross_timeframe section, fixed field order).
+- No resampling, no merging, no interpolation, no inferred metadata; the
+  chart screenshot is never authoritative OHLCV; fixture and root-cause
+  firewalls unchanged; Phase 9 Pine and the Phase 8 plan untouched.
+
+### Verification evidence
+
+- Selftest: 109/109 (DAT-001..028 + NG-001..009 + MTD-001..016 + REG-001..002).
+- Determinism: 3 fresh CLI processes byte-identical on the four real
+  datasets (data_contract_id data-f6d9bd8748a4).
+- Regressions green: incident intake (INT-001..010 + NG-001..008),
+  formalization (13), feasibility (22), pre-verification (20),
+  implementation (8), Phase 13 trace (53/53), Phase 12 rev1 suite
+  (DAT+NG, 71) inside the new 109.
+- Phase 12 boundary honored: STOP after data acquisition. No Phase 13
+  execution tracing, no root-cause analysis, no repair.
+- Production gate note: with the four real datasets supplied, the data
+  contract is BLOCKED (DA-G17) because the authoritative Phase 11 incident
+  contract declares target symbol BTCUSDT while the user-supplied chart
+  exports declare AUSDT.P (KCEX futures perpetual). Phase 12 records the
+  contradiction mechanically and does NOT reinterpret or repair the Phase 11
+  contract; resolving the identity discrepancy is an upstream (user) action,
+  after which re-running the same command yields the aligned contract.
+
+## 2.5.0 - PHASE 11 REV 2: Corrected Incident Identity — AUSDT.P / KCEX (2026-09-12)
+
+### Delivered
+
+- New corrected incident **`incident-7aff422a8ae6`** (content-addressed,
+  deterministic) replacing the wrong target identity as a NEW incident:
+  symbol **AUSDT.P** (verbatim, no normalization), exchange **KCEX**,
+  timeframe 5m, timezone UNKNOWN (not fabricated),
+  implementation_id impl-f56a05897f87 (unchanged). Status **READY**,
+  `downstream_allowed: true`, blockers empty.
+- `incident/incident_intake.pl`: `--supersedes` pass-through + emission
+  (field already defined in incident contract schema v1.0; previously
+  hardcoded `null`) + INT-G1 incident-id format validation. The new
+  incident links the old one ONLY as
+  `supersedes: incident-940ef2698dda` — the old BTCUSDT incident is not
+  invalidated, overwritten, or mutated.
+- Previous BTCUSDT incident contract (`incident-940ef2698dda`, sha256
+  2c6822dc…390b4) durably archived byte-identical at
+  `incident/archive/phase11_incident_BTCUSDT_940ef2698dda.yaml` (it had
+  existed only in volatile /tmp).
+- `incident/phase11_corrected_result.yaml` — new production result
+  artifact (old BTCUSDT intake preserved untouched).
+- `incident/evidence/incident-7aff422a8ae6/` — per-incident evidence
+  directory: screenshot copied byte-unchanged (IMG-001, CHART_IMAGE /
+  OBSERVED / HIGH, sha256 04daea13…d10178b) + verbatim user report.
+  9 evidence items total: 8 USER_REPORTED + 1 OBSERVED; provenance
+  enum respected; screenshot never treated as OHLCV; localization
+  USER_POINTED / APPROXIMATE / timestamp UNKNOWN (no bar invented).
+
+### Tests
+
+- Selftest 79/79 = INT-001..010 + NG-001..008 +
+  **INT-REV2-001..012** + **NG-REV2-001..007**: AUSDT.P target accepted,
+  KCEX preserved, old incident preserved byte-identical, new incident_id
+  differs, no BTCUSDT inheritance, screenshot = CHART_IMAGE not OHLCV,
+  root-cause firewall blocks causal wording, localization uncertainty
+  preserved, 3-process determinism, Phase 1–10 artifacts unchanged,
+  no silent symbol substitution (both directions), no exchange
+  inference, no old-id reuse.
+- Determinism: 3 fresh processes byte-identical (sha256 9235d7df…cec88).
+- Regressions green: trace 53/53, data acquisition 109/109,
+  implementation 8, feasibility 22, pre-verification 20, formalization 13.
+- Phase 9 Pine hash d62af444…316e4 verified unchanged; Phase 12/13
+  engines untouched by Phase 11.
+
+### Boundary
+
+- Phase 12 NOT EXECUTED, Phase 13 NOT EXECUTED, Phase 14 NOT EXECUTED,
+  Phase 15 NOT EXECUTED. No commit, no push at phase time.
+
+## 2.6.0 - PHASE 12 REV 3: Corrected Incident Validation Re-Run (2026-09-12)
+
+### Delivered
+
+- Controlled re-run of the existing Phase 12 rev2 engine (no redesign)
+  consuming the corrected incident `incident-7aff422a8ae6` and the four
+  real KCEX datasets → **`data/phase12_result_v3.yaml`**
+  (data_contract_id **`data-062bba4b0fe9`**; v1/v2 results preserved).
+- DA-G17 re-evaluated mechanically on real values: incident
+  AUSDT.P/KCEX vs datasets AUSDT.P/KCEX → PASS. Regression proven BOTH
+  ways: OLD (BTCUSDT archive + datasets) → BLOCKED 4× DA-G17 exit 2;
+  NEW → no identity blocker. Gate not weakened.
+- Two proven Phase-12-owned defects fixed (mandate-permitted):
+  1. `_ts_num` month-boundary arithmetic — concatenated Y/M/D basis
+     measured the Aug 31→Sep 1 hour step as ~861M "seconds",
+     producing 239,256 phantom DI01 absent bars on DS-004 (60m);
+     verified 350 contiguous hourly bars, zero absent. Pinned by
+     REG-003.
+  2. DI06 findings nested-arrayref rendering.
+- Selftest **111/111** (DAT-001..028 + NG-001..009 + MTD-001..016 +
+  REG-001..003).
+- Determinism: 3 fresh CLI processes byte-identical (sha256
+  b1a63c9e…2807a).
+
+### Production result (honest)
+
+- 1m→DS-001 (306 rows), 5m→DS-002 (301), 15m→DS-003 (301),
+  60m→DS-004 (350); all AUSDT.P / KCEX / FUTURES_PERPETUAL, UTC,
+  `time,open,high,low,close` + indicator columns, **no volume column**.
+- DA-G18 timeframe identity ESTABLISHED; full required_timeframe_map;
+  cross-TF identity CONSISTENT; no resampling/merging/inference.
+- **1m DI01 fail: 21 genuinely absent bars** (real property of the
+  export, re-verified; source data never repaired). Existing unweakened
+  rule: any per-dataset integrity fail → **INSUFFICIENT_DATA**,
+  `downstream_allowed: false`. Warnings: DI04 gaps (1m), DI07 no
+  volume (×4), W-ALIGNMENT-PARTIAL (incident timezone UNKNOWN).
+- Blockers: none. Root cause: NOT_EVALUATED (Phase 14 boundary).
+
+### Boundary
+
+- Phase 13 NOT EXECUTED, Phase 14 NOT EXECUTED, Phase 15 NOT EXECUTED.
+  Unblocking requires a gap-free 1m export; one Phase 12 re-run then
+  opens the gate.
