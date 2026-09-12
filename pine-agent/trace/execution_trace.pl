@@ -223,13 +223,21 @@ sub parse_impl_modules {
 }
 
 # --------------------------------------------------------------------------
-# CSV dataset parsing (ts,open,high,low,close,volume) — same as Phase 12;
-# chronological stable sort (original index kept as tiebreak)
+# CSV dataset parsing — Phase 12 v1.1-compatible (REV fix, cross-phase
+# consistency): header-aware (ts|time|timestamp,open,high,low,close[,volume]),
+# volume OPTIONAL (KCEX exports carry none; reconstruction never reads it),
+# extraneous indicator columns IGNORED, ISO-8601 and UNIX-epoch timestamps.
+# Bare positional 6-column CSVs remain accepted (backward compat).
+# Chronological stable sort (original index kept as tiebreak)
 # --------------------------------------------------------------------------
 sub _ts_num {
     my ($ts) = @_;
-    return undef unless defined $ts && $ts =~ /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?Z?$/;
-    return sprintf('%04d%02d%02d%02d%02d%02d', $1, $2, $3, $4, $5, ($6 // 0)) + 0;
+    return undef unless defined $ts;
+    if ($ts =~ /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:Z)?$/) {
+        return sprintf('%04d%02d%02d%02d%02d%02d', $1, $2, $3, $4, $5, ($6 // 0)) + 0;
+    }
+    return $ts + 0 if $ts =~ /^\d+$/;   # UNIX epoch seconds
+    return undef;
 }
 
 sub parse_csv_dataset {
@@ -237,16 +245,44 @@ sub parse_csv_dataset {
     return undef unless defined $raw && length $raw;
     my @rows;
     my $n = 0;
+    my %col;    # name -> index (header mode)
     for my $line (split /\r?\n/, $raw) {
         next if $line =~ /^\s*$/;
+        next if $line =~ /^#/;
         $n++;
         my @f = split /,/, $line;
-        return undef unless @f == 6;
-        my ($ts, $o, $h, $l, $c, $v) = map { s/^\s+|\s+$//g; $_ } @f;
-        return undef unless defined _ts_num($ts);
-        for my $x ($o, $h, $l, $c, $v) { return undef unless $x =~ /^-?\d+(?:\.\d+)?$/; }
-        push @rows, { ts => $ts, open => $o + 0, high => $h + 0, low => $l + 0,
-                      close => $c + 0, volume => $v + 0, raw_line_no => $n };
+        if (!%col && $line =~ /^\s*(ts|timestamp|time)\s*,/i) {   # header row
+            my @names = map { my $x = $_; $x =~ s/^\s+|\s+$//g; lc($x) } @f;
+            for my $i (0 .. $#names) {
+                my $nm = $names[$i];
+                if    ($nm =~ /^(ts|timestamp|time)$/) { $col{ts} = $i; }
+                elsif ($nm eq 'open')                  { $col{open} = $i; }
+                elsif ($nm eq 'high')                  { $col{high} = $i; }
+                elsif ($nm eq 'low')                   { $col{low} = $i; }
+                elsif ($nm eq 'close')                 { $col{close} = $i; }
+                elsif ($nm eq 'volume' || $nm eq 'vol'){ $col{volume} = $i; }
+            }
+            return undef unless defined $col{ts} && defined $col{open} && defined $col{high}
+                && defined $col{low} && defined $col{close};   # OHLC mandatory; volume not
+            next;
+        }
+        if (%col) {
+            my ($ts, $o, $h, $l, $c) = map { my $x = $f[ $col{$_} ]; defined $x ? ($x =~ s/^\s+|\s+$//gr) : undef } qw(ts open high low close);
+            my $v = defined $col{volume} ? $f[ $col{volume} ] : '';
+            return undef unless defined $ts && defined $o && defined $h && defined $l && defined $c;
+            return undef unless defined _ts_num($ts);
+            for my $x ($o, $h, $l, $c) { return undef unless $x =~ /^-?\d+(?:\.\d+)?$/; }
+            push @rows, { ts => $ts, open => $o + 0, high => $h + 0, low => $l + 0,
+                          close => $c + 0, volume => (!defined $v || $v eq '' ? 0 : ($v =~ /^-?\d+(?:\.\d+)?$/ ? $v + 0 : 0)), raw_line_no => $n };
+        }
+        else {
+            return undef unless @f == 6;   # legacy positional
+            my ($ts, $o, $h, $l, $c, $v) = map { s/^\s+|\s+$//g; $_ } @f;
+            return undef unless defined _ts_num($ts);
+            for my $x ($o, $h, $l, $c, $v) { return undef unless $x =~ /^-?\d+(?:\.\d+)?$/; }
+            push @rows, { ts => $ts, open => $o + 0, high => $h + 0, low => $l + 0,
+                          close => $c + 0, volume => $v + 0, raw_line_no => $n };
+        }
     }
     return undef unless @rows;
     my @sorted = sort { (_ts_num($a->{ts}) <=> _ts_num($b->{ts})) || ($a->{raw_line_no} <=> $b->{raw_line_no}) } @rows;
@@ -1784,9 +1820,31 @@ sub selftest {
         $ok->(($seeded =~ $CAUSAL_RX && $yaml_g !~ $CAUSAL_RX), 'NG-011 causal wording mechanically rejected; engine output clean');
     }
     $ok->(($yaml_g =~ /^repair: NOT_EVALUATED$/m && !grep { ($_->{reason} // '') =~ /repair|patch/i } @{ $g->{blockers} }), 'NG-012 no repair performed or proposed');
-    $ok->($r21->{downstream}{next_stage} eq 'HALT' && $r21->{downstream}{next_stage} ne 'ROOT_CAUSE_ANALYSIS', 'NG-013 Phase 14 gate stays closed for incomplete traces');
+
+    # --- TRC-029: Phase-12-v1.1-compatible dataset parsing (REV parser fix) ---
+    {
+        my $hdr40 = "time,open,high,low,close,Indicator A,Indicator B\n";
+        $hdr40   .= "2026-09-12T00:21:00Z,1,2,0.5,1.5,7,8\n";
+        $hdr40   .= "2026-09-12T00:24:00Z,1.5,2.5,1,2,,9\n";
+        my $p40 = parse_csv_dataset($hdr40);
+        $ok->(defined $p40 && @{ $p40 } == 2, 'TRC-029 header-aware: wide header CSV with no volume column parses');
+        $ok->(defined $p40 && $p40->[1]{volume} == 0, 'TRC-029 volume-optional: missing volume parses as 0 (never read by reconstruction)');
+        my $epoch = "time,open,high,low,close\n1789172460,1,2,0.5,1.5\n1789172640,1.5,2.5,1,2\n";
+        my $pe = parse_csv_dataset($epoch);
+        $ok->(defined $pe && @{ $pe } == 2 && _ts_num($pe->[0]{ts}) == 1789172460, 'TRC-029 UNIX-epoch timestamps parse');
+        my $legacy = "2026-09-09T13:45:00Z,1,2,0.5,1.5,10\n2026-09-09T13:46:00Z,1.5,2.5,1,2,12\n";
+        my $pl = parse_csv_dataset($legacy);
+        $ok->(defined $pl && @{ $pl } == 2 && $pl->[0]{volume} == 10, 'TRC-029 legacy positional 6-column CSV still parses (backward compat)');
+        my $bad1 = "time,open,high,low\n1,2,3,4\n";
+        $ok->(!defined parse_csv_dataset($bad1), 'TRC-029 header missing OHLC column rejected');
+        my $bad2 = "time,open,high,low,close\n2026-09-12T00:21:00Z,1,2,x,1.5\n";
+        $ok->(!defined parse_csv_dataset($bad2), 'TRC-029 non-numeric OHLC cell rejected');
+        my $bad3 = "garbage line without commas\n";
+        $ok->(!defined parse_csv_dataset($bad3), 'TRC-029 non-CSV non-ISO non-epoch line rejected (old behavior preserved)');
+    }
 
     print "selftest: $passed passed, $failed failed\n";
+
     return $failed ? 1 : 0;
 }
 

@@ -157,6 +157,7 @@ sub parse_input {
         interpretation      => $i{interpretation},
         region              => $i{region},
         region_confidence   => $i{region_confidence},
+        loc_timestamp       => $i{loc_timestamp},        # user-supplied crosshair/axis timestamp (verbatim; never invented)
         project_artifact    => $i{project_artifact},
         supersedes          => $i{supersedes},           # link to a superseded incident (recorded, never mutated)
     };
@@ -260,6 +261,7 @@ sub check_g5 {
     my ($inp, $imgs) = @_;
     my $region = $inp->{region};
     my $has_img = @$imgs ? 1 : 0;
+    my $user_ts = (defined $inp->{loc_timestamp} && $inp->{loc_timestamp} =~ /\S/) ? $inp->{loc_timestamp} : undef;
     if (defined $region && $region =~ /\S/) {
         my $method = $inp->{region_confidence} // ($has_img ? 'USER_POINTED' : 'APPROXIMATE_ONLY');
         if (!$LOC_OK{$method}) {
@@ -272,9 +274,25 @@ sub check_g5 {
         );
         push @{ r_loc_trace() }, { evidence_id => $eid, method => $method, statement => $region };
         return {
-            method => $method, timestamp => 'UNKNOWN', timestamp_status => 'NOT_ESTABLISHED',
+            method => $method,
+            timestamp => ($user_ts // 'UNKNOWN'),
+            timestamp_status => ($user_ts ? 'USER_SUPPLIED' : 'NOT_ESTABLISHED'),
             bar_index => 'UNKNOWN', bar_index_status => 'NOT_ESTABLISHED',
-            region => $region, precision => 'APPROXIMATE',
+            region => $region,
+            precision => ($user_ts ? 'EXACT' : 'APPROXIMATE'),
+        };
+    }
+    if ($user_ts) {
+        # timestamp supplied without a region reference: still recorded verbatim
+        my $eid = add_evidence(
+            source => 'USER_TEXT', classification => 'USER_REPORTED', confidence => 'HIGH',
+            location => 'crosshair timestamp (verbatim)', statement => "target bar timestamp: " . $user_ts,
+        );
+        push @{ r_loc_trace() }, { evidence_id => $eid, method => 'TIME_AXIS', statement => "target bar timestamp: " . $user_ts };
+        return {
+            method => 'TIME_AXIS', timestamp => $user_ts, timestamp_status => 'USER_SUPPLIED',
+            bar_index => 'UNKNOWN', bar_index_status => 'NOT_ESTABLISHED',
+            region => undef, precision => 'EXACT',
         };
     }
     add_unknown('exact bar index cannot be established from the supplied evidence (never invented)');
@@ -746,7 +764,7 @@ sub main {
         elsif ($a eq '--supersedes')   { $kv{supersedes} = shift @ARGV; }
         elsif ($a eq '--gate-check')   { $gate = 1; }
         elsif ($a eq '--selftest')     { my $st = selftest(); exit $st; }
-        elsif ($a =~ /^--(symbol|exchange|timeframe|timezone|implementation-id|expected|observed|interpretation|region|artifact)$/) {
+        elsif ($a =~ /^--(symbol|exchange|timeframe|timezone|implementation-id|expected|observed|interpretation|region|artifact|timestamp)$/) {
             $kv{$1} = shift @ARGV;
         }
         elsif ($a eq '--image-obs')    { push @{ $kv{image_obs} }, shift @ARGV; }   # IMG-001|statement|classification|confidence
@@ -785,7 +803,7 @@ sub main {
     }
     my %kmap = (symbol => 'symbol', exchange => 'exchange', timeframe => 'timeframe', timezone => 'timezone',
                 'implementation-id' => 'implementation_id', expected => 'expected', observed => 'observed',                 interpretation => 'interpretation', region => 'region', artifact => 'project_artifact',
-                 supersedes => 'supersedes');
+                 timestamp => 'loc_timestamp', supersedes => 'supersedes');
     for my $k (keys %kmap) { $spec{ $kmap{$k} } = $kv{$k} if defined $kv{$k}; }
 
     my $r = incident_text(\%spec);
