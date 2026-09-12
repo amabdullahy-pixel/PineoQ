@@ -1,0 +1,5 @@
+Fresh evidence package for the same incident, uploaded on GitHub 12/Sep/2026: new KCEX AUSDT.P CSV exports (3m / 5m / 15m / 60m, in ISO-time and UNIX-timestamp variants) and a fresh screenshot taken 12/Sep/2026 10:21 — "SO .CSV AND SCREENSHOT BELONG TO EACHOTHERS". The user explicitly authorizes replacing the older evidence package: "IF OLD ONE BECOME USELESS YOU CAN DELETE THEM AND USE THOSE NEW ONE", and asks to be told whether the gate gets open ("LET ME NOW IF THE GATE GETS OPEN").
+
+Expected/observed behavior carried verbatim from the superseded intake's user report (incident-7aff422a8ae6): "in the highlighted region a BUY signal should have appeared, but no visible BUY marker is detected in the inspected region on the AUSDT.P KCEX chart."
+
+Target timeframe updated by user decision (2026-09-12): base chart timeframe moves from 5m to 3m — "3M,5M,15,1H".
