@@ -1731,3 +1731,147 @@ Chronological, append-only. Never rewrite or delete historical entries.
 - Phase 13 NOT EXECUTED, Phase 14 NOT EXECUTED, Phase 15 NOT EXECUTED.
   Unblocking requires a gap-free 1m export; one Phase 12 re-run then
   opens the gate.
+
+## 2.7.0 - PHASE 11 REV 3/4 + PHASE 12 REV 4 + PHASE 13 REV 2/3: Fresh Evidence Package to Open Trace Gate (2026-09-12)
+
+**Status:** trace-stage (recorded post-commit - the results below were committed
+to GitHub in commit `dfa7afd` before this entry was written; this is the
+append-only bookkeeping catch-up, not a new execution)
+
+### Evidence package (user-supplied, 2026-09-12)
+
+- Fresh screenshot `Screenshot 2026-09-12 113000.png` (sha256 `af8c8f9e...0805`)
+  with a TradingView crosshair placed on the target bar, plus fresh 3m/5m/15m/60m
+  KCEX AUSDT.P exports (ISO and UNIX variants). CSV and screenshot belong
+  together by date; superseded raw files remain preserved, never deleted.
+
+### Phase 11 REV 3/4 - bar-level localization intake (user-authorized parser fix)
+
+- New incident **`incident-1f4370820bfc`** (supersedes incident-0888f878890e's
+  APPROXIMATE localization ONLY - same evidence package, exact crosshair anchor
+  added): localization **EXACT** at **`2026-09-12T00:45:00Z`**, target
+  AUSDT.P / KCEX / **3m**, implementation impl-f56a05897f87 unchanged.
+  The verbatim user crosshair timestamp now drives EXACT localization
+  (user-authorized intake fix; no bar invented, no pixel-derived OHLCV).
+- `incident/phase11_corrected_result_rev4.yaml`: status READY_WITH_WARNINGS,
+  blockers empty, downstream_allowed true -> EXECUTION_TRACE_AND_DEBUG.
+
+### Phase 12 REV 4 - 3m-target data contract
+
+- `data/phase12_result_v6.yaml`: data_contract_id **`data-ed1f1383df82`** binding
+  incident-1f4370820bfc to the 3m target dataset (DS-001, 301 rows,
+  2026-09-11T19:18Z .. 2026-09-12T10:18Z, no volume column, 35 extraneous ARO
+  indicator columns recorded) plus 5m/15m/60m supporting datasets.
+- data_sufficiency **SUFFICIENT_WITH_WARNINGS**, downstream_allowed true ->
+  EXECUTION_TRACE_AND_DEBUG. The prior 1m-only INSUFFICIENT_DATA blocker is
+  moot for this incident: the 3m target uses the 3m dataset, integrity-checked
+  on its own cadence (per-TF DI discipline).
+
+### Phase 13 REV 2/3 - execution trace executed
+
+- REV 2 (`trace/phase13_result_v3.yaml`): trace-7bdde620ab9a, PARTIAL_TRACE
+  (intermediate run during the REV chain).
+- REV 3 (`trace/phase13_result_v4.yaml`): trace_id **`trace-97baff40aee7`,
+  mode RECONSTRUCTED** (pine-subset-reconstruction-v1 over the
+  fingerprint-verified Phase 12 dataset; DIRECT/INSTRUMENTED unavailable,
+  priority never upgraded) - **110-bar causal window**
+  2026-09-11T19:18Z .. 2026-09-12T00:45Z (bar 0 var-state initialization
+  through localized bar 109), **1430 trace nodes**, C-1 boolean decomposition
+  per bar (G1 guards, cond-left/cond-right/cond-result, NA vs FALSE vs
+  NOT_EVALUATED kept distinct), per-bar state_crossover and signal_c1 values.
+- Status **READY_WITH_WARNINGS** (W-001 instrument-identity incompleteness
+  carried honestly), blockers empty, downstream_allowed true ->
+  **ROOT_CAUSE_ANALYSIS** - the Phase 14 gate is OPEN.
+
+### Boundary
+
+- Phase 14 NOT EXECUTED at this entry's commit time (executed immediately
+  after, recorded as 2.8.0); Phase 15 NOT EXECUTED.
+
+## 2.8.0 - PHASE 14: Root Cause Analysis Engine Complete (2026-09-12)
+
+### Delivered
+
+- `rca/root_cause_analyzer.pl` - the Phase 14 Root Cause Analysis decision
+  engine (core Perl 5, zero non-core deps; runtime contract identical to the
+  Phase 4-13 engines). Consumes the Phase 13 RECONSTRUCTED trace contract
+  (gate: READY/READY_WITH_WARNINGS, downstream open, mode RECONSTRUCTED) + the
+  Phase 9 Pine source + the Phase 8 authoritative plan, and answers ONLY
+  "why did the observed behavior occur?" - mechanically, from committed
+  evidence. Causal findings classified CODE_PROPERTY | DATA_PROPERTY |
+  EXPECTATION_MISMATCH | PLATFORM_SEMANTICS | UNKNOWN, each strictly
+  evidence-referenced (trace nodes / code facts / contract facts).
+- Mechanical checks RCA-G1..G7 (trace gate, localization anchor, source
+  integrity, node extraction, signal-history reconstruction over all
+  evaluated C-1 nodes, finding classification, repair firewall).
+- `rca/phase14_rca_result.yaml` - production RCA contract.
+
+### Fixed (Phase-14-owned draft defects only - no immutable artifact touched)
+
+1. `parse_trace` indent alignment - demanded 2-space indent for `trace_id`
+   while Phase 13 emits it at column 0 (RCA-G1 false-fail on the real
+   contract); now accepts any indent.
+2. Missing `Encode::decode` import - `_slurp` died on file input (selftest
+   passed only because it feeds inline text); `use Encode qw(encode decode)`.
+3. Early-refusal path skipped finalization - refused inputs had no rca_id/
+   result_hash; shared `_finalize()` gives every outcome a complete,
+   content-addressed contract.
+4. `result_hash` emitted as 'null' (serialized before computation); now
+   computed BEFORE serialization as sha256(canonical body + rca_id),
+   mirroring execution_trace.pl's hash discipline.
+5. `use utf8` added - em-dash literals in finding statements were byte
+   sequences being double-encoded by `encode('UTF-8', ...)`; output now
+   carries proper UTF-8 (verified byte-level: 5 em-dashes, 0 double-encoded
+   bytes).
+
+### Production result (honest, evidence-referenced)
+
+- rca_id **`rca-5cbb33a5bfe7`**, trace-97baff40aee7, window 110 bars,
+  localized bar 2026-09-12T00:45:00Z, Pine source sha256 `d62af444ecd9...`.
+- Signal history: C-1 evaluated on 109 bars, **true on 0**
+  (distribution `0: 109`).
+- **F-001 (DATA_PROPERTY, HIGH):** every close in the traced window lies in
+  [0.07597, 0.07701] while C-1 requires close > 30 - the left clause can
+  never be true on this instrument's price scale.
+- **F-002 (EXPECTATION_MISMATCH, HIGH):** the formalized condition
+  'close crosses over 30' presupposes a price scale above 30, but AUSDT.P
+  trades near 0.077 - the expectation that a BUY appears at the localized
+  bar is incompatible with the condition as formalized.
+- **F-003 (CODE_PROPERTY, HIGH):** zero firing history - C-1 false on every
+  one of the 109 evaluated bars; not a marginal miss but a systematic
+  impossibility under the current threshold.
+- **F-004 (CODE_PROPERTY, HIGH):** the production script contains no marker
+  construct and its only plot is display=display.none (authorized Option A) -
+  even a true signal could never appear as a visible BUY marker; visible
+  markers in the screenshot originate from other scripts on the chart.
+- **F-005 (UNKNOWN, MEDIUM):** the KCEX exports carry 35 ARO-family indicator
+  columns (incl. 'Master Buy'/'Master Sell') - plausible source of the visible
+  BUY markers, but the relationship to impl-f56a05897f87 was never established
+  by any upstream contract; recorded as UNKNOWN, never asserted.
+- Status **READY_WITH_WARNINGS**, downstream_allowed true ->
+  **REPAIR_AND_REGRESSION** (Phase 15). Repair: **NOT_PERFORMED**
+  (Phase 14 boundary; no source or upstream artifact modified).
+- Unknown U-001: DIRECT TradingView runtime evidence remains unavailable; the
+  causal chain is established over the deterministic reconstruction.
+
+### Verification evidence
+
+- Selftest: **13/13** (RCA-001..006 + NG-RCA-001..003): happy path classified
+  findings; mechanical signal-history counting; display.none visibility
+  finding; deterministic content-addressed rca_id; repair firewall; gate-check
+  approve; closed-gate / STATIC_ONLY / INSUFFICIENT_EVIDENCE refusals.
+- Determinism: 3 fresh CLI processes byte-identical (result sha256
+  `17fe5116...974b4`).
+- Gate-check verified: approve path exit 0 (READY_WITH_WARNINGS,
+  REPAIR_AND_REGRESSION may start).
+- Regressions green across all engines: router selftest + scenarios,
+  formalization, pre-verification, feasibility, planning, implementation,
+  Phase 11 intake, Phase 12, Phase 13 (59/59).
+- Integrity: zero Phase 1-13 artifacts modified; only the new `rca/` tree
+  added.
+
+### Boundary
+
+- Phase 15 (repair) NOT EXECUTED. The question F-002 raises (threshold
+  semantics vs data reality) is a Formalization-level decision; any repair
+  route goes through the pipeline, never through Phase 14.
