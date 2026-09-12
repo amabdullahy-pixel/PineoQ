@@ -1875,3 +1875,97 @@ append-only bookkeeping catch-up, not a new execution)
 - Phase 15 (repair) NOT EXECUTED. The question F-002 raises (threshold
   semantics vs data reality) is a Formalization-level decision; any repair
   route goes through the pipeline, never through Phase 14.
+
+## 2.9.0 - PHASE 15: Repair & Regression Engine Complete (2026-09-12)
+
+### User decision (recorded verbatim, RRP-G2 authorization)
+
+> I MEAN normalized/scaled value (e.g., 30 on the ARO indicator's 0-100 scale)
+
+This resolves F-002 (EXPECTATION_MISMATCH) by user supply: the threshold 30 in
+condition C-1 is a value on the ARO indicator's normalized 0-100 scale, NOT the
+raw AUSDT.P price. `user_supply: ALLOWED_BY_RCA_F-002`;
+`silent_resolution: FORBIDDEN_AGENT_RULES_6`.
+
+### Delivered
+
+- `rca/repair_and_regression.pl` - the Phase 15 Repair & Regression decision
+  engine (core Perl 5, zero non-core deps; house contract identical to the
+  Phase 11-14 engines). Consumes the Phase 14 RCA contract (gate:
+  READY/READY_WITH_WARNINGS, downstream open, next_stage
+  REPAIR_AND_REGRESSION) plus the user's verbatim decision, and produces the
+  repair contract: findings-driven repair items, recorded ambiguities (never
+  silently resolved), a mechanical proxy regression over the exact
+  fingerprinted dataset, and an honest validation status.
+- Mechanical checks RRP-G1..G8 (RCA gate, repair authorization, source
+  integrity, repair justification, unit-semantics verification,
+  regression integrity, repair firewall, ambiguity gate).
+- `rca/phase15_repair_result.yaml` - production repair contract
+  (repair_id `rep-e44daf4b9966`, result_hash `2425b7f4...b8ace`).
+
+### Production result (honest, evidence-referenced)
+
+- **RP-001 (REFORMALIZE):** formalization C-1 condition_verbatim
+  'close crosses over 30' -> 'ARO_BOUNDED_SCALE crosses over 30 (normalized
+  0-100 indicator scale; user decision)'.
+- **RP-002 (PATCH_LATER_VIA_REIMPLEMENTATION):** the code mirror of RP-001 into
+  `implementation/phase9_pine.pine:25` goes through the pipeline
+  (Formalization -> Implementation), never in-place (repair firewall RRP-G7;
+  zero upstream artifacts modified).
+- **A-001 (OPEN_DECISION_REQUIRED):** the exact ARO series is NOT silently
+  chosen. The fingerprinted 3m dataset carries several bounded-scale
+  candidates: ARO Bounded Core (-80.87..88.56), Pullback Score
+  (-48.28..53.01), ZoneForce Long (0..99.36), ZoneForce Short (0..99.87).
+  Re-implementation stays blocked until the user resolves A-001.
+- **Proxy regression (operand PROVISIONAL pending A-001, Pullback Score):**
+  over the exact Phase 12 fingerprinted 3m dataset
+  (sha256 `49d7d90b...2932`, 301 rows): original C-1 fires **0**, repaired
+  proxy (cross over 30) fires **11** - first at **2026-09-12T00:42:00Z**, the
+  3m bar immediately BEFORE the crosshair bar 00:45, where Pullback Score
+  reads **30.79 -> 31.86**. Determinism re-computation PASS. A-002 records
+  the observation (no cross of 30 exactly AT bar 109 under the proxy; the
+  cross lands one bar earlier) as an open semantic question, never asserted.
+- Status **READY_WITH_WARNINGS**, downstream_allowed true ->
+  **FORMALIZATION** (re-formalization of the repaired condition).
+  Re-implementation remains gated on A-001/A-002 user decisions
+  (AGENT_RULES 6/8).
+- validation_status **STATICALLY_REVIEWED_MECHANICALLY_RECONSTRUCTED** - no
+  Pine compiler exists locally; nothing is claimed ACTUALLY VERIFIED.
+
+### Fixed (Phase-15-owned draft defects only - no immutable artifact touched)
+
+1. C-1 extraction regex lacked `/m` - failed on any multi-line Pine source
+   (including the real production source); pinned by the selftest.
+2. `build_canonical` hashed a nonexistent `formalized_condition` field;
+   now hashes the actual `to` field.
+3. Regression section now carries `operand_provisional` + an explicit
+   operand_note so the proxy evaluation can never be mistaken for final
+   repaired semantics.
+4. Dataset path emitted repo-relative (never absolute environment paths).
+
+### Verification evidence
+
+- Selftest: **14/14** (RRP-001..006 + NG-RRP-001..004): dataset parser;
+  findings-driven repair items; ambiguity discipline; mechanical regression
+  (original 0 fires vs repaired 1 fire on the fixture cross); honest
+  validation status; deterministic content-addressed repair_id; missing /
+  off-topic decision refusals; closed-gate refusal; no-EXPECTATION_MISMATCH
+  refusal.
+- Determinism: 3 fresh CLI processes byte-identical (result sha256
+  `92f93047...609c`).
+- Gate-check verified: approve path exit 0 (READY_WITH_WARNINGS,
+  re-Formalization may start; open decision points called out in the gate
+  message).
+- Regressions green across all 10 upstream engines: router (80/80),
+  formalization (13), pre-verification (20), feasibility (22), planning (27),
+  implementation (8), Phase 11 intake (REV2 suite), Phase 12 (111), Phase 13
+  (59/59), Phase 14 RCA (13/13).
+- Integrity: zero Phase 1-14 artifacts modified; only the new Phase 15
+  engine + result contract added.
+
+### Boundary
+
+- Re-Formalization of the repaired condition NOT EXECUTED (next stage;
+  requires the user's A-001 series decision, and optionally the A-002
+  cross-bar semantic confirmation). Phase 16+ NOT EXECUTED. No Pine source,
+  plan, or upstream contract modified by Phase 15.
